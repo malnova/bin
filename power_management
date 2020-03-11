@@ -31,7 +31,7 @@
 # désactive le mode en question. Exemple : xset dpms 180 0 300
 # Pour forcer la mise en veille (OU l'hibernation OU l'arrêt immédiat)
 # de l'écran : xset dpms force standby (OU suspend OU off)
-# Activer DPMS peut entraîne le verrouillage de la session !
+# Activer DPMS entraîne le verrouillage de la session !
 #
 if [ "$1" = "start" ]; then
     # Réglage de DPMS (pour activation possible avec C-A-s) et désactivation
@@ -72,6 +72,8 @@ locker="xidlehook"
 # 3. Suspend to both :
 # Commande : systemctl hybrid-sleep
 if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
+    # Le verrouillage de lightdm (avec dm-tool ou light-locker-command) entraîne
+    # aussi l'extinction de l'écran !
     locker_command="xidlehook --not-when-fullscreen \
         --timer 330 \
             'light-locker-command -l' \
