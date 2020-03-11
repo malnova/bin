@@ -1,0 +1,112 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_scsi
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset scsis
+    scsis="$(${default_path}hwinfo --scsi | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sed 's/^[^:]*: //g' | sort)"
+    scsi_nb=0
+    while IFS= read -r line; do
+        declare -a scsi_label
+        scsi_label[$scsi_nb]=$(str_str "$line" " ")
+        if [ ! -z "${scsi_label[$scsi_nb]}" ]; then
+            is_scsi=1
+            scsi_label[$scsi_nb]=$(sanityse_output "${scsi_label[$scsi_nb]}")
+            if [ "$scsi_nb" -eq 0 ] || [ "${scsi_label[$scsi_nb]}" != "${scsi_label[$scsi_nb-1]}" ]; then
+                echo "<separator label=\"${scsi_label[scsi_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((scsi_nb++))
+        fi
+        unset scsi_model
+        scsi_model=$(str_str "$line" "Model:")
+        if [ ! -z "$scsi_model" ]; then
+            is_scsi=1
+            scsi_model=$(sanityse_output "$scsi_model")
+            echo "<item label=\"Modèle : $scsi_model\" />"
+        fi
+        unset scsi_driver
+        scsi_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$scsi_driver" ]; then
+            scsi_driver=$(sanityse_output "$scsi_driver")
+        fi
+        unset scsi_driver_status_all
+        scsi_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset scsi_driver_status scsi_status
+        if [ ! -z "$scsi_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
+                    scsi_status=$(echo "$scsi_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
+                    scsi_status=$(echo "$scsi_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
+                    scsi_status=$(echo "$scsi_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
+                    scsi_status=$(echo "$scsi_status,$driver_new inactifs")
+                fi
+                scsi_driver_status=$(echo "$scsi_driver_status" | sed -e 's/^[,]*//')
+                scsi_status=$(echo "$scsi_status" | sed -e 's/^[,]*//')
+            done <<< "$scsi_driver_status_all"
+        fi
+        unset scsi_driver_modules
+        scsi_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$scsi_driver_modules" ]; then
+            scsi_driver_modules=$(sanityse_output "$scsi_driver_modules")
+        fi
+        if [ -z "$scsi_driver" ] && [ ! -z "$scsi_driver_status" ]; then
+            is_scsi=1
+            echo "<item label=\"Driver(s) : $scsi_driver_status\" />"
+        elif [ ! -z "$scsi_driver" ] && [ -z "$scsi_driver_status" ]; then
+            is_scsi=1
+            echo "<item label=\"Driver(s) : $scsi_driver\" />"
+        elif [ ! -z "$scsi_driver" ] && [ ! -z "$scsi_driver_status" ] && [ "$scsi_driver" == "$scsi_driver_status" ]; then
+            is_scsi=1
+            echo "<item label=\"Driver(s) : $scsi_driver\" />"
+        elif [ ! -z "$scsi_driver" ] && [ ! -z "$scsi_driver_status" ] && [ "$scsi_driver" != "$scsi_driver_status" ]; then
+            is_scsi=1
+            scsi_driver=$(echo "$scsi_driver ($scsi_driver_status)")
+            echo "<item label=\"Driver(s) : $scsi_driver\" />"
+        fi
+        if [ ! -z "$scsi_driver_modules" ]; then
+            is_scsi=1
+            echo "<item label=\"Module(s) : $scsi_driver_modules\" />"
+        fi
+        if [ ! -z "$scsi_status" ]; then
+            is_scsi=1
+            echo "<item label=\"État : $scsi_status\" />"
+        fi
+    done <<< "$scsis"
+    if [ ! -z "$is_scsi" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --scsi")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --scsi")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_scsi" ]; then
+    echo "<item label=\"Aucun périphérique SCSI détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

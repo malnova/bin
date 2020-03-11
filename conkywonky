@@ -1,0 +1,33 @@
+#!/bin/bash
+# conkywonky
+# ----------
+# Many moons ago, Conky did not automatically restart when changes were
+# made to its config files. This script was used to restart it. It does not
+# really serve any purpose now, but I like the name and some people may still
+# be using/referencing it.
+
+restart_conky(){
+    if [ -e "$HOME/.config/conky/" ]; then
+        unset conkyrc_list
+        conkyrc_list=$(ls $HOME/.config/conky/*conkyrc* 2>/dev/null)
+        if [ ! -z "$conkyrc_list" ]; then
+            while IFS= read -r conkyrc_file; do
+                conky -qc "$conkyrc_file"
+            done <<< "$conkyrc_list"
+        else
+            conky -q
+        fi
+    else
+        conky -q
+    fi
+    exit
+}
+
+if [ "$(pidof conky)" ]; then
+    killall -q conky
+    restart_conky
+    exit
+else
+    restart_conky
+    exit
+fi

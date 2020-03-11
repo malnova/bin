@@ -1,0 +1,4 @@
+#!/bin/bash
+. default-commands
+
+${default_path}feh --auto-rotate --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" "$@"

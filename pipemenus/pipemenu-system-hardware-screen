@@ -1,0 +1,101 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+IFS=$' '
+unset is_screen
+if [ -e "/var/log/Xorg.0.log" ]; then
+    unset screen_model screen_vendor
+    screen_model=$(cat /var/log/Xorg.0.log | grep -ioP 'Monitor name:\K.*' | head -n1)
+    screen_vendor=$(cat /var/log/Xorg.0.log | grep -ioP 'EDID vendor \K.*' | head -n1 | awk '{print $1;}' | sed -r "s/.*?([\"'])(.*)\1.*/\2/")
+    if [ ! -z "$screen_model" ] || [ ! -z "$screen_vendor" ]; then
+        echo "<separator label=\"Xorg.0.log\" />"
+    fi
+    if [ ! -z "$screen_model" ]; then
+        is_screen=1
+        screen_model=$(sanityse_output "$screen_model")
+        echo "<item label=\"Modèle : $screen_model\" />"
+    fi
+    if [ ! -z "$screen_vendor" ]; then
+        is_screen=1
+        screen_vendor=$(sanityse_output_with_quotes "$screen_vendor")
+        echo "<item label=\"Fabricant : $screen_vendor\" />"
+    fi
+fi
+
+z=0
+unset screens
+screens=$(${default_path}xrandr | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+unset screens_connected
+screens_connected=$(echo "$screens" | grep " connected")
+while read -r screen_is_connected; do
+    is_screen=1
+    unset screen_device
+    screen_device=$(echo "$screen_is_connected" | awk -F' connected ' '{print $1}')
+    if [ ! -z "$screen_device" ]; then
+        screen_device=$(sanityse_output "$screen_device")
+        echo "<separator label=\"$screen_device\" />"
+    fi
+    unset screen_details
+    screen_details=$(echo -e "$screens" | LC_ALL=C awk -n '/'${screen_device}'/ && !f{f=1;x=$0;sub(/[^ ].*/,"",x);x=x" ";print;next} f {if (substr($0,1,length(x))==x)print; else f=0}')
+    unset screen_description
+    screen_description=$(echo -e "$screen_details" | grep " connected " | head -n1)
+    unset screen_is_active
+    screen_is_active=$(echo -e $screen_details | grep '*' | head -n1)
+    if [ ! -z "$screen_is_active" ]; then
+        unset screen_width screen_height screen_size screen_diagonal
+        screen_width=$(echo -e "$screen_description" | rev | awk -F' ' '{print $3}' | rev | sed 's/[^0-9]*//g')
+        screen_height=$(echo -e "$screen_description" | rev | awk -F' ' '{print $1}' | rev | sed 's/[^0-9]*//g')
+        if [ ! -z "$screen_width" ] && [ ! -z "$screen_height" ]; then
+            screen_diagonal=$(echo "scale=20; (sqrt($screen_width^2 + $screen_height^2)) / 25.4" | bc)
+            screen_diagonal_scale=1
+            screen_diagonal=$(LC_NUMERIC=C printf %.${screen_diagonal_scale}f $(echo "scale=${screen_diagonal_scale};(((10^${screen_diagonal_scale})*${screen_diagonal})+0.5)/(10^${screen_diagonal_scale})" | bc))
+            if [[ "$screen_diagonal" == *".0"* ]]; then
+                screen_diagonal=$(echo "$screen_diagonal" | cut -d '.' -f1)
+            fi
+            screen_size="${screen_width}mm x ${screen_height}mm (${screen_diagonal} pouces)"
+            screen_size=$(sanityse_output "$screen_size")
+            echo "<item label=\"Taille : $screen_size\" />"
+        fi
+        unset screen_resolution
+        screen_resolution=$(echo "$screen_description" | awk -F' connected ' '{print $2}' | awk '{print $1}')
+        if [ ! -z "$screen_resolution" ]; then
+            if [[ ! "$screen_resolution" =~ [0-9] ]]; then
+                screen_resolution=$(echo "$screen_description" | awk -F' connected ' '{print $2}' | awk '{print $2}')
+            fi
+            if [[ "$screen_resolution" =~ [0-9] ]]; then
+                screen_resolution=$(sanityse_output "$screen_resolution")
+                echo "<item label=\"Résolution : $screen_resolution\" />"
+            fi
+        fi
+        unset screen_frequency
+        screen_frequency=$(echo "$screen_is_active" | cut -d '*' -f1 | awk 'NF>1{print $NF}')
+        if [ ! -z "$screen_frequency" ]; then
+            screen_frequency=$(sanityse_output "$screen_frequency")
+            echo "<item label=\"Fréquence : $screen_frequency MHz\" />"
+        fi
+        if [ ! -z "$screen_description" ] && [[ "$screen_description" =~ " primary " ]]; then
+            echo "<item label=\"État : actif, primaire\" />"
+        else
+            echo "<item label=\"État : actif\" />"
+        fi
+    else
+        echo "<item label=\"État : inactif\" />"
+    fi
+done <<< "$screens_connected"
+
+if [ -z "$is_screen" ]; then
+    echo "<item label=\"Aucun écran détecté.\" />"
+fi
+
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    echo "<separator />"
+    echo "<item label=\"Afficher plus d'informations (hwinfo)\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --monitor")</command></action></item>"
+fi
+
+echo "</openbox_pipe_menu>"
+unset IFS
+exit 0

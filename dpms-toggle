@@ -1,0 +1,33 @@
+#!/bin/bash
+# Le réglage de dpms est effectué dans le fichier .config/openbox/autostart
+
+#
+# Use mkdir as an atomic operation to avoid multiple scripts running at once
+#
+lock_dir="/tmp/dpmsctl.exclusivelock"
+if mkdir "$lock_dir"; then
+    trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
+    notification_on="La mise en veille de l'écran est activée."
+    notification_off="La mise en veille de l'écran est désactivée."
+    notification_problem="Problème avec xset !"
+    DPMS_STATUS=$(xset q | perl -ne 'if (/DPMS is (Enabled|Disabled)/) { print $1 . "\n"; }')
+    if [ "$1" = "status" ]; then
+        if [ "$DPMS_STATUS" = "Enabled" ]; then
+            dunstify -r 17854 -t 2000 "$notification_on"
+        elif [ "$DPMS_STATUS" = "Disabled" ]; then
+            dunstify -r 17854 -t 2000 "$notification_off"
+        else
+            dunstify -r 17854 -t 2000 "$notification_problem"
+        fi
+    else
+        if [ "$DPMS_STATUS" = "Enabled" ]; then
+            xset -dpms
+            dunstify -r 17854 -t 2000 "$notification_off"
+        elif [ "$DPMS_STATUS" = "Disabled" ]; then
+            xset +dpms
+            dunstify -r 17854 -t 2000 "$notification_on"
+        else
+            dunstify -r 17854 -t 2000 "$notification_problem"
+        fi
+    fi
+fi

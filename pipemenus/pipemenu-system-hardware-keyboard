@@ -1,0 +1,149 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_keyboard
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset keyboards
+    keyboards="$(${default_path}hwinfo --keyboard | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    keyboard_nb=0
+    while IFS= read -r line; do
+        declare -a keyboard_connector
+        keyboard_connector[$keyboard_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
+        if [ ! -z "${keyboard_connector[$keyboard_nb]}" ]; then
+            is_keyboard=1
+            keyboard_connector[$keyboard_nb]=$(sanityse_output "${keyboard_connector[$keyboard_nb]}")
+            if [ "$keyboard_nb" -eq 0 ] || [ "${keyboard_connector[$keyboard_nb]}" != "${keyboard_connector[$keyboard_nb-1]}" ]; then
+                echo "<separator label=\"Port ${keyboard_connector[keyboard_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((keyboard_nb++))
+        fi
+        unset keyboard_model
+        keyboard_model=$(str_str "$line" "Model:")
+        if [ ! -z "$keyboard_model" ]; then
+            is_keyboard=1
+            keyboard_model=$(sanityse_output "$keyboard_model")
+            echo "<item label=\"Modèle : $keyboard_model\" />"
+            ((z++))
+        fi
+        unset keyboard_vendor
+        keyboard_vendor=$(str_str "$line" "Vendor:")
+        if [ ! -z "$keyboard_vendor" ]; then
+            is_keyboard=1
+            keyboard_vendor=$(sanityse_output_with_quotes "$keyboard_vendor")
+            echo "<item label=\"Fabricant : $keyboard_vendor\" />"
+            ((z++))
+        fi
+        unset keyboard_device_file
+        keyboard_device_file=$(str_str "$line" "Device Files:" | grep -ioP '/dev/input/event[0-9]+' | head -n1)
+        if [ ! -z "$keyboard_device_file" ]; then
+            is_keyboard=1
+            unset keyboard_matchvendor
+            keyboard_matchvendor=$(udevadm info --query=property --name=$keyboard_device_file | grep -ioP 'ID_VENDOR=\K.*')
+            if [ ! -z "$keyboard_matchvendor" ]; then
+                keyboard_matchvendor=$(sanityse_output "$keyboard_matchvendor")
+                echo "<item label=\"Fournisseur (MatchVendor) : $keyboard_matchvendor\" />"
+            fi
+            keyboard_device_file=$(sanityse_output "$keyboard_device_file")
+            echo "<item label=\"Fichier : $keyboard_device_file\" />"
+            ((z++))
+        fi
+        unset keyboard_xkbmodel
+        keyboard_xkbmodel=$(str_str "$line" "XkbModel:")
+        if [ ! -z "$keyboard_xkbmodel" ]; then
+            is_keyboard=1
+            keyboard_xkbmodel=$(sanityse_output "$keyboard_xkbmodel")
+            echo "<item label=\"XkbModel : $keyboard_xkbmodel\" />"
+            ((z++))
+        fi
+        unset keyboard_driver
+        keyboard_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$keyboard_driver" ]; then
+            keyboard_driver=$(sanityse_output "$keyboard_driver")
+        fi
+        unset keyboard_driver_status_all
+        keyboard_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset keyboard_driver_status keyboard_status
+        if [ ! -z "$keyboard_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    keyboard_driver_status=$(echo "$keyboard_driver_status,$driver_new")
+                    keyboard_status=$(echo "$keyboard_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    keyboard_driver_status=$(echo "$keyboard_driver_status,$driver_new")
+                    keyboard_status=$(echo "$keyboard_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    keyboard_driver_status=$(echo "$keyboard_driver_status,$driver_new")
+                    keyboard_status=$(echo "$keyboard_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    keyboard_driver_status=$(echo "$keyboard_driver_status,$driver_new")
+                    keyboard_status=$(echo "$keyboard_status,$driver_new inactifs")
+                fi
+                keyboard_driver_status=$(echo "$keyboard_driver_status" | sed -e 's/^[,]*//')
+                keyboard_status=$(echo "$keyboard_status" | sed -e 's/^[,]*//')
+            done <<< "$keyboard_driver_status_all"
+        fi
+        unset keyboard_driver_modules
+        keyboard_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$keyboard_driver_modules" ]; then
+            keyboard_driver_modules=$(sanityse_output "$keyboard_driver_modules")
+        fi
+        if [ -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ]; then
+            is_keyboard=1
+            echo "<item label=\"Driver(s) : $keyboard_driver_status\" />"
+            ((z++))
+        elif [ ! -z "$keyboard_driver" ] && [ -z "$keyboard_driver_status" ]; then
+            is_keyboard=1
+            echo "<item label=\"Driver(s) : $keyboard_driver\" />"
+            ((z++))
+        elif [ ! -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ] && [ "$keyboard_driver" == "$keyboard_driver_status" ]; then
+            is_keyboard=1
+            echo "<item label=\"Driver(s) : $keyboard_driver\" />"
+            ((z++))
+        elif [ ! -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ] && [ "$keyboard_driver" != "$keyboard_driver_status" ]; then
+            is_keyboard=1
+            keyboard_driver=$(echo "$keyboard_driver ($keyboard_driver_status)")
+            echo "<item label=\"Driver(s) : $keyboard_driver\" />"
+            ((z++))
+        fi
+        if [ ! -z "$keyboard_driver_modules" ]; then
+            is_keyboard=1
+            echo "<item label=\"Module(s) : $keyboard_driver_modules\" />"
+            ((z++))
+        fi
+        if [ ! -z "$keyboard_status" ]; then
+            is_keyboard=1
+            echo "<item label=\"État : $keyboard_status\" />"
+            ((z++))
+        fi
+    done <<< "$keyboards"
+    if [ ! -z "$is_keyboard" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --keyboard")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --keyboard")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_keyboard" ]; then
+    echo "<item label=\"Aucun clavier détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

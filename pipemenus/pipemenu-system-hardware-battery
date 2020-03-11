@@ -1,0 +1,153 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+IFS=$' '
+battery_folder="/sys/class/power_supply/"
+unset is_battery
+if [ -e "${default_path}upower" ]; then
+    # Requiert l'installation du paquet upower
+    z=0
+    while read -d $'\xBF' line; do
+        if [ "$z" -gt 0 ] && ([[ "$line" =~ "model:" ]] || [[ "$line" =~ "native-path:" ]] || [[ "$line" =~ "technology:" ]] || [[ "$line" =~ "state:" ]] || [[ "$line" =~ "percentage:" ]] || [[ "$line" =~ "time to empty:" ]]); then
+            echo "<separator />"
+            z=0
+        fi
+        unset battery_model
+        battery_model=$(echo "$line" | grep -ioP '^\s*model:\K.*')
+        if [ ! -z "$battery_model" ]; then
+            is_battery=1
+            battery_model=$(sanityse_output "$battery_model")
+            echo "<item label=\"Modèle : $battery_model\" />"
+            ((z++))
+        fi
+        unset battery_path
+        battery_path=$(echo "$line" | grep -ioP '^\s*native-path:\K.*' | awk '{print $1}')
+        if [ ! -z "$battery_path" ]; then
+            is_battery=1
+            if [ -e "${battery_folder}${battery_path}/uevent" ]; then
+                unset battery_manufacturer
+                battery_manufacturer=$(cat "${battery_folder}${battery_path}/uevent" | grep -ioP 'POWER_SUPPLY_MANUFACTURER=\K.*')
+                if [ ! -z "$battery_manufacturer" ]; then
+                    is_battery=1
+                    battery_manufacturer=$(sanityse_output_with_quotes "$battery_manufacturer")
+                    echo "<item label=\"Fabricant : $battery_manufacturer\" />"
+                fi
+            fi
+            battery_path=$(sanityse_output "$battery_path")
+            echo "<item label=\"Chemin : $battery_path\" />"
+            ((z++))
+        fi
+        unset battery_technology
+        battery_technology=$(echo "$line" | grep -ioP '^\s*technology:\K.*')
+        if [ ! -z "$battery_technology" ]; then
+            is_battery=1
+            battery_technology=$(sanityse_output "$battery_technology")
+            echo "<item label=\"Technologie : $battery_technology\" />"
+            ((z++))
+        fi
+        unset battery_status
+        battery_status=$(echo "$line" | grep -ioP '^\s*state:\K.*')
+        if [ ! -z "$battery_status" ]; then
+            is_battery=1
+            battery_status=$(sanityse_output "$battery_status")
+            echo "<item label=\"État : $battery_status\" />"
+            ((z++))
+        fi
+        unset battery_percentage
+        battery_percentage=$(echo "$line" | grep -ioP '^\s*percentage:\K.*')
+        if [ ! -z "$battery_percentage" ]; then
+            is_battery=1
+            battery_percentage=$(sanityse_output "$battery_percentage")
+            echo "<item label=\"Niveau : $battery_percentage\" />"
+            ((z++))
+        fi
+        unset battery_time
+        battery_time=$(echo "$line" | grep -ioP '^\s*time to empty:\K.*')
+        if [ ! -z "$battery_time" ]; then
+            is_battery=1
+            battery_time=$(sanityse_output "$battery_time")
+            echo "<item label=\"Temps restant : $battery_time\" />"
+            ((z++))
+        fi
+    done < <(${default_path}upower --dump | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    if [ ! -z "$is_battery" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher les informations complètes (upower)\"><action name=\"Execute\"><command>$(display_file "${default_path}upower --dump")</command></action></item>"
+    fi
+else
+    if [ -d "$battery_folder" ]; then
+        unset battery
+        battery=$(ls "$battery_folder")
+        if [ ! -z "$battery" ]; then
+            z=0
+            while read -r line; do
+                if [ "$z" -gt 0 ]; then
+                    echo "<separator />"
+                fi
+                if [ -e "${battery_folder}${line}/uevent" ]; then
+                    unset battery
+                    battery=$(cat "${battery_folder}${line}/uevent")
+                    unset battery_model
+                    battery_model=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_MODEL_NAME=\K.*')
+                    if [ ! -z "$battery_model" ]; then
+                        is_battery=1
+                        battery_model=$(sanityse_output "$battery_model")
+                        echo "<item label=\"Modèle : $battery_model\" />"
+                        ((z++))
+                    fi
+                    unset battery_manufacturer
+                    battery_manufacturer=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_MANUFACTURER=\K.*')
+                    if [ ! -z "$battery_manufacturer" ]; then
+                        is_battery=1
+                        battery_manufacturer=$(sanityse_output_with_quotes "$battery_manufacturer")
+                        echo "<item label=\"Fabricant : $battery_manufacturer\" />"
+                        ((z++))
+                    fi
+                    unset battery_path
+                    battery_path=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_NAME=\K.*')
+                    if [ ! -z "$battery_path" ]; then
+                        is_battery=1
+                        battery_path=$(sanityse_output "$battery_path")
+                        echo "<item label=\"Chemin : $battery_path\" />"
+                        ((z++))
+                    fi
+                    unset battery_technology
+                    battery_technology=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_TECHNOLOGY=\K.*')
+                    if [ ! -z "$battery_technology" ]; then
+                        is_battery=1
+                        battery_technology=$(sanityse_output "$battery_technology")
+                        echo "<item label=\"Technologie : $battery_technology\" />"
+                        ((z++))
+                    fi
+                    unset battery_status
+                    battery_status=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_STATUS=\K.*')
+                    if [ ! -z "$battery_status" ]; then
+                        is_battery=1
+                        battery_status=$(sanityse_output "$battery_status")
+                        echo "<item label=\"État : $battery_status\" />"
+                        ((z++))
+                    fi
+                    unset battery_percentage
+                    battery_percentage=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_CAPACITY=\K.*')
+                    if [ ! -z "$battery_percentage" ]; then
+                        is_battery=1
+                        battery_percentage=$(sanityse_output "$battery_percentage")
+                        echo "<item label=\"Niveau : ${battery_percentage}%\" />"
+                        ((z++))
+                    fi
+                fi
+            done <<< "$battery"
+        fi
+    fi
+fi
+unset IFS
+
+if [ -z "$is_battery" ]; then
+    echo "<item label=\"Aucune batterie détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

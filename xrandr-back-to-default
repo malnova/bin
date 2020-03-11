@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#
+# Use mkdir as an atomic operation to avoid multiple scripts running at once
+#
+lock_dir="/tmp/xrandrctl.exclusivelock"
+if mkdir "$lock_dir"; then
+    trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
+    # Pour ORDIPORTABLE, décommenter la ligne suivante :
+    #xrandr --output VGA-1 --off --output HDMI-1 --off --output DP-1 --off --output eDP-1 --auto --rotate normal --pos 0x0 --primary
+
+    # Pour ORDIBUREAU, décommenter la ligne suivante :
+    #xrandr --output VGA-1 --off --output HDMI-1 --off --output DVI-I-1 --auto --rotate normal --pos 0x0 --primary
+fi

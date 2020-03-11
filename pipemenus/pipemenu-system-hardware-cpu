@@ -1,0 +1,96 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_cpu
+if [ -e "${default_path}lscpu" ]; then
+    IFS=$' '
+    cpu_nb=$(${default_path}lscpu | egrep 'Cœur|Socket|^CPU\(s)')
+    unset socket_nb
+    socket_nb=$(echo "$cpu_nb" | sed -n -e 's/^Socket.*://p')
+    if [ ! -z "$socket_nb" ]; then
+        is_cpu=1
+        socket_nb=$(sanityse_output "$socket_nb")
+        echo "<item label=\"Nombre d'emplacements physiques / sockets : $socket_nb\" />"
+    fi
+    unset core_nb
+    core_nb=$(echo "$cpu_nb" | sed -n -e 's/^Cœur.*://p')
+    if [ ! -z "$core_nb" ]; then
+        is_cpu=1
+        core_nb=$(sanityse_output "$core_nb")
+        echo "<item label=\"Nombre de cœurs : $core_nb\" />"
+    fi
+fi
+
+if [ -e "/proc/cpuinfo" ]; then
+    cpu=$(cat /proc/cpuinfo)
+    unset cpu_nb_total
+    cpu_nb_total=$(echo "$cpu" | grep -cioP '^processor\s*:\K.*')
+    if [ ! -z "$cpu_nb_total" ]; then
+        is_cpu=1
+        cpu_nb_total=$(sanityse_output "$cpu_nb_total")
+        echo "<item label=\"Nombre total de processeurs : $cpu_nb_total\" />"
+    fi
+    while read -d $'\xBF' line; do
+        unset cpu_nb
+        cpu_nb=$(echo "$line" | grep -ioP '^processor\s*:\K.*')
+        if [ ! -z "$cpu_nb" ]; then
+            is_cpu=1
+            cpu_nb=$(sanityse_output "$cpu_nb")
+            echo "<separator label=\"Processeur $cpu_nb\" />"
+            unset cpu_model
+            cpu_model=$(echo "$line" | grep -ioP '^model name\s*:\K.*')
+            if [ ! -z "$cpu_model" ]; then
+                cpu_model=$(sanityse_output "$cpu_model")
+                echo "<item label=\"Modèle : $cpu_model\" />"
+            fi
+            unset cpu_vendor
+            cpu_vendor=$(echo "$line" | grep -ioP '^vendor_id\s*:\K.*')
+            if [ ! -z "$cpu_vendor" ]; then
+                cpu_vendor=$(sanityse_output_with_quotes "$cpu_vendor")
+                echo "<item label=\"Fabricant : $cpu_vendor\" />"
+            fi
+            unset cpu_cache
+            cpu_cache=$(echo "$line" | grep -ioP '^cache size\s*:\K.*' | grep -Eo '[0-9]+')
+            if [ ! -z "$cpu_cache" ]; then
+                echo "<item label=\"Cache : $cpu_cache ko\" />"
+            fi
+            if [ -e "/sys/devices/system/cpu/cpu${cpu_nb}/cpufreq/scaling_min_freq" ]; then
+                unset cpu_min_freq
+                cpu_min_freq=$(cat /sys/devices/system/cpu/cpu${cpu_nb}/cpufreq/scaling_min_freq | grep -Eo '[0-9]+')
+                if [ ! -z "$cpu_min_freq" ]; then
+                    cpu_min_freq=$(( cpu_min_freq / 1000 ))
+                    echo "<item label=\"Fréquence min. : $cpu_min_freq MHz\" />"
+                fi
+            fi
+            if [ -e "/sys/devices/system/cpu/cpu${cpu_nb}/cpufreq/scaling_max_freq" ]; then
+                unset cpu_max_freq
+                cpu_max_freq=$(cat /sys/devices/system/cpu/cpu${cpu_nb}/cpufreq/scaling_max_freq | grep -Eo '[0-9]+')
+                if [ ! -z "$cpu_max_freq" ]; then
+                    cpu_max_freq=$(( cpu_max_freq / 1000 ))
+                    echo "<item label=\"Fréquence max. : $cpu_max_freq MHz\" />"
+                fi
+            fi
+        fi
+    done < <(echo "$cpu" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    unset IFS
+fi
+
+if [ ! -z "$is_cpu" ]; then
+    echo "<separator />"
+    if [ -e "${default_path}lscpu" ]; then
+        echo "<item label=\"Afficher plus d'informations (lscpu)\"><action name=\"Execute\"><command>$(display_file "${default_path}lscpu")</command></action></item>"
+    fi
+    if [ -e "/proc/cpuinfo" ]; then
+        echo "<item label=\"Afficher plus d'informations (/proc/cpuinfo)\"><action name=\"Execute\"><command>$(cat_file "/proc/cpuinfo")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_cpu" ]; then
+    echo "<item label=\"Aucun processeur détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

@@ -1,0 +1,31 @@
+#!/bin/bash
+picom_conf_file="$HOME/.config/picom.conf"
+RESTART_ATTEMPTS=4
+
+forcekill_picom() {
+    killall -q picom
+    for (( i=0; i < RESTART_ATTEMPTS; i++ )); do
+        if [ ! "$(pidof picom)" ]; then
+            break
+        fi
+        (( i == RESTART_ATTEMPTS - 1 )) && killall -q -S KILL picom
+        sleep 0.25
+    done
+}
+
+if [[ $1 = '--stop' ]]; then
+    if [ "$(pidof picom)" ]; then
+        forcekill_picom
+    fi
+elif [[ $1 = '--restart' ]]; then
+    if [ "$(pidof picom)" ]; then
+        forcekill_picom
+    fi
+    if [ -e "$binds_file" ]; then
+        picom --config $picom_conf_file &
+    else
+        picom &
+    fi
+fi
+
+exit 0

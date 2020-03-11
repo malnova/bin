@@ -1,0 +1,30 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_partition
+partition_str=''
+while IFS= read -r line; do
+    is_partition=1
+    partition_mountpoint=$(echo "$line" | awk '{print $1}')
+    partition_mountpoint=$(sanityse_output "$partition_mountpoint")
+    partition_space_used=$(echo "$line" | awk '{print $2}')
+    partition_space_total=$(echo "$line" | awk '{print $3}')
+    partition_space_percent=$(echo "$line" | awk '{print $4}')
+    partition_str+="<item label=\"$partition_mountpoint : $partition_space_used utilisés sur $partition_space_total ($partition_space_percent)\" />"
+done < <(${default_path}df -h --output=target,used,size,pcent -x tmpfs -x devtmpfs | grep '/')
+
+if [ -z "$is_partition" ]; then
+    echo "<item label=\"Aucune partition détectée.\" />"
+else
+    echo "$partition_str"
+fi
+
+echo "<separator />"
+echo "<item label=\"Afficher les UUIDs\"><action name=\"Execute\"><command>$(display_file "${default_path}lsblk -f")</command></action></item>"
+echo "<item label=\"Afficher toutes les partitions\"><action name=\"Execute\"><command>$(display_file "${default_path}df -h --output=source,fstype,size,used,avail,pcent,file,target")</command></action></item>"
+
+echo "</openbox_pipe_menu>"
+exit 0

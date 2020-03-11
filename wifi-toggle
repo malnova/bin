@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#
+# Use mkdir as an atomic operation to avoid multiple scripts running at once
+#
+lock_dir="/tmp/wifictl.exclusivelock"
+if mkdir "$lock_dir"; then
+    trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
+    notification_not_available="Le wifi n'est pas disponible."
+    notification_on="Le wifi est activé."
+    notification_off="Le wifi est désactivé."
+
+    unset wifi_is_available wifi_status
+    wifi_is_available=$(/usr/bin/iwconfig 2>/dev/null | grep ESSID)
+    if [ -z "$wifi_is_available" ]; then
+        dunstify -r 19127 -t 2000 "$notification_not_available"
+    else
+        wifi_status=$(nmcli radio wifi)
+        if [ "$1" = "status" ]; then
+            if [ "$wifi_status" = "enabled" ]; then
+                dunstify -r 19127 -t 2000 "$notification_on"
+            else
+                dunstify -r 19127 -t 2000 "$notification_off"
+            fi
+        else
+            if [ "$wifi_status" = "enabled" ]; then
+                nmcli radio wifi off
+                dunstify -r 19127 -t 2000 "$notification_off"
+            else
+                nmcli radio wifi on
+                dunstify -r 19127 -t 2000 "$notification_on"
+            fi
+        fi
+    fi
+fi

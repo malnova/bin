@@ -1,0 +1,86 @@
+#!/bin/bash
+. default-commands
+
+echo "<openbox_pipe_menu>"
+
+# Batteries
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-battery\" id=\"system-hardware-battery\" label=\"Batteries\" />"
+
+# BIOS / EFI / UEFI
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-bios\" id=\"system-hardware-bios\" label=\"BIOS / EFI / UEFI\" />"
+
+# Carte mère
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-motherboard\" id=\"system-hardware-motherboard\" label=\"Carte mère\" />"
+
+# Écran
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-screen\" id=\"system-hardware-screen\" label=\"Écrans\" />"
+
+# CPU
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-cpu\" id=\"system-hardware-cpu\" label=\"Processeurs (CPU)\" />"
+
+# RAM
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-ram\" id=\"system-hardware-ram\" label=\"RAM\" />"
+
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    echo "<separator label=\"hwinfo\" />"
+    
+    # Bluetooth
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-bluetooth\" id=\"system-hardware-bluetooth\" label=\"Bluetooth\" />"
+    
+    # Cartes graphiques
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-gfxcard\" id=\"system-hardware-gfxcard\" label=\"Cartes graphiques\" />"
+    
+    # Cartes réseau
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-netcard\" id=\"system-hardware-netcard\" label=\"Cartes réseau\" />"
+    
+    # Claviers
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-keyboard\" id=\"system-hardware-keyboard\" label=\"Claviers\" />"
+    
+    # Disques
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-disk\" id=\"system-hardware-disk\" label=\"Disques\" />"
+    
+    # Imprimantes
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-printer\" id=\"system-hardware-printer\" label=\"Imprimantes\" />"
+    
+    # Lecteurs de CD / DVD
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-cdrom\" id=\"system-hardware-cdrom\" label=\"Lecteurs de CD/DVD\" />"
+    
+    # Son
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-sound\" id=\"system-hardware-sound\" label=\"Son\" />"
+    
+    # Souris
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-mouse\" id=\"system-hardware-mouse\" label=\"Souris et touchpads\" />"
+    
+    echo "<separator label=\"Ports (hwinfo)\" />"
+    
+    # Périphériques FireWire
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-firewire\" id=\"system-hardware-firewire\" label=\"FireWire\" />"
+    
+    # Périphériques IDE
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-ide\" id=\"system-hardware-ide\" label=\"IDE\" />"
+    
+    # Périphériques PCI
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-pci\" id=\"system-hardware-pci\" label=\"PCI\" />"
+    
+    # Périphériques PCMCIA
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-pcmcia\" id=\"system-hardware-pcmcia\" label=\"PCMCIA\" />"
+    
+    # Périphériques PPPoE
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-pppoe\" id=\"system-hardware-pppoe\" label=\"PPPoE\" />"
+    
+    # Périphériques SCSI
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-scsi\" id=\"system-hardware-scsi\" label=\"SCSI\" />"
+    
+    # Périphériques USB
+    echo "<menu execute=\"${scripts_path}pipemenu-system-hardware-usb\" id=\"system-hardware-usb\" label=\"USB\" />"
+fi
+
+echo "<separator />"
+
+# Résumé
+echo "<item label=\"Afficher un aperçu (hwinfo)\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short")</command></action></item>"
+echo "<item label=\"Afficher un résumé du matériel\"><action name=\"Execute\"><command>${scripts_path}pipemenu-system-hardware-summary</command></action></item>"
+
+echo "</openbox_pipe_menu>"
+exit 0

@@ -1,0 +1,103 @@
+#!/bin/bash
+# Inspiré par pacnanny : https://github.com/brandoninvergo/pacnanny
+date_format='%Y-%m-%d %H:%M:%S'
+update_command="/usr/bin/trizen -Syu"
+news_url="https://www.archlinux.org/feeds/news/"
+pacman_log='/var/log/pacman.log'
+bold=$(tput bold)
+italic=$(tput sitm)
+reset=$(tput sgr0)
+yellow='\033[1;33m'
+nocolor='\033[0m'
+
+last_update_date=$(grep '.*upgraded.*(.*)$\|starting full system upgrade' $pacman_log | tail -n1 | grep -o -E "[-0-9\]*T[:0-9]*\+[0-9]+")
+last_update_ts=$(TZ=UTC date -d "$last_update_date" '+%s')
+
+# Afficher les dernières actualités depuis archlinux.org
+[ -z "$1" ] && news_nb=3 || news_nb="$1"
+news=$(curl --silent $news_url)
+if [ $? -eq 0 ]; then
+    IFS=$'\n'
+    # Reformater le flux RSS pour que chaque item soit sur une ligne
+    items=$(echo $news | tr -d '\n' | sed -e 's|<item>|\n<item>|g')
+    while IFS= read -r item; do
+        pubDate_date=$(echo "$item" | sed -e 's/.*<pubDate>\(.*\)<\/pubDate>.*/\1/')
+        pubDate_ts=$(TZ=UTC date -d "$pubDate_date" '+%s')
+        pubDate_readable=$(TZ=CET date -d "@$pubDate_ts" "+$date_format")
+        title=$(echo "$item" | sed -e 's/.*<title>\(.*\)<\/title>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
+        if [ "$pubDate_ts" -ge "$last_update_ts" ]; then
+            echo -e "${bold}${yellow}${pubDate_readable} ${title}${nocolor}${reset}"
+            description=$(echo "$item" | sed -e 's/.*<description>\(.*\)<\/description>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
+            # Remplacer les balises de liens <a href=""> par la couleur bleue
+            description=$(echo "$description" | sed 's/<a href="[^>]*>/\\033[1;34m/g;s/<\/a>/\\033[0m/g')
+            # Remplacer les balises <code> par la couleur verte
+            description=$(echo "$description" | sed 's/<code>/\\033[1;32m/g;s/<\/code>/\\033[0m/g')
+            # Remplacer les balises <strong> par une mise en gras
+            description=$(echo "$description" | sed "s/<strong>/$bold/g;s/<\/strong>/$reset/g")
+            # Remplacer les balises <em> par une mise en italique
+            description=$(echo "$description" | sed "s/<em>/$italic/g;s/<\/em>/$reset/g")
+            # Supprimer toutes les autres balises HTML
+            description=$(echo "$description" | sed -e 's/<[^>]*>//g')
+            echo -e "$description"
+            #creator=$(echo "$item" | sed -e 's/.*<dc:creator.*>\(.*\)<\/dc:creator>.*/\1/')
+        else
+            echo "$pubDate_readable $title"
+        fi
+    done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n $news_nb)
+else
+    echo "Erreur : impossible de charger la page $news_url."
+fi
+
+# Lancer la mise à jour d'Arch
+run_date=`date '+%Y-%m-%dT%H:%M'`
+eval $update_command
+
+# Récpuérer la partie du log de pacman correspondant à la dernière mise à jour
+pacman_log=$(sed -n -e "/\[$run_date.*\] \[PACMAN\] Running '.*pacman.*'/,\${/.*/p}" "$pacman_log")
+
+# Si des paquets ont été mis à jour, vérifier si des processus doivent
+# être relancés
+is_upgraded=$(echo "$pacman_log" | grep ' upgraded ')
+if [ "x$is_upgraded" != "x" ]; then
+    if command -v /usr/bin/needrestart >/dev/null 2>&1; then
+        /usr/bin/needrestart
+    else
+        echo -e "${bold}${yellow}Le paquet needrestart (dans AUR) n'est pas installé. La vérification des processus en cours est impossible.${nocolor}${reset}"
+    fi
+fi
+
+# Vérifier si certains paquets sont orphelins
+while read -r line; do
+    has_deps=$( /usr/bin/pacman -Rcsp "$line" | wc -l )
+    if [ $has_deps -eq 1 ]; then
+        echo -e "${bold}Le paquet $line est orphelin et peut être supprimé : sudo pacman -Rcns ${line}${reset}"
+    fi
+done <<< "$( /usr/bin/pacman -Qtdq )"
+
+# Nettoyage du cache de pacman (dans /var/cache/pacman/pkg/)
+if command -v /usr/bin/paccache >/dev/null 2>&1; then
+    # Supprimer les fichiers du cache de pacman correspondant à des paquets non installés
+    /usr/bin/sudo /usr/bin/paccache --remove --uninstalled --keep 0 1>/dev/null
+    # Conserver seulement 1 archive pour les paquets installés (ne laisser
+    # que 2 fichiers par paquet dans le cache de pacman : la version actuelle
+    # + la version précédente)
+    /usr/bin/sudo /usr/bin/paccache --remove --keep 2 1>/dev/null
+else
+    echo -e "${bold}${yellow}Le paquet pacman-contrib (fournissant la commande paccache) n'est pas installé. Le nettoyage du cache de pacman ne peut être effectué.${nocolor}${reset}"
+fi
+
+# Affichage des fichiers .pacnew et .pacsave
+pacnews=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacnew")
+if [ "x$pacnews" != "x" ]; then
+    echo -e "${bold}${yellow}De nouveaux fichiers .pacnew ont été créés :\n${pacnews}${nocolor}${reset}"
+fi
+pacsaves=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacsave")
+if [ "x$pacsaves" != "x" ]; then
+    echo -e "${bold}${yellow}De nouveaux fichiers .pacsave ont été créés :\n${pacsaves}${nocolor}${reset}"
+fi
+
+# Récapitulatif des warnings
+warnings=$(echo "$pacman_log" | grep 'warning: ')
+if [ "x$warnings" != "x" ]; then
+    echo -e "${bold}${yellow}Récapitulatif des warnings :\n${warnings}${nocolor}${reset}"
+fi

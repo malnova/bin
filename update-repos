@@ -1,0 +1,3 @@
+#!/bin/dash
+
+reflector --country 'France' --latest 50 --age 6 --sort rate --save /etc/pacman.d/mirrorlist

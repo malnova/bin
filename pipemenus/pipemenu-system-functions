@@ -1,0 +1,53 @@
+#!/bin/bash
+end_delimiter=" |@| "
+
+# Fonction pour un affichage correct dans le menu d'Openbox (pipemenus)
+function sanityse_output() {
+    local str="$@"
+    local output
+    # Conserver une seule ligne ;
+    # supprimer les guillemets ;
+    # remplacer _ par __ ;
+    # remplacer & par &amp; ;
+    # supprimer les espaces au début, à la fin, ou les espaces internes multiples (puisque pas de guillemets autour de "$str" ou "$output")
+    output=$(echo $str | head -n1 | sed 's/\"//g' | sed 's/_/__/g' | sed 's/&/&amp;/g')
+    echo $output
+}
+function sanityse_output_with_quotes() {
+    local str="$@"
+    local output
+    # Conserver une seule ligne ;
+    # supprimer les guillemets externes (au début et à la fin) ;
+    # remplacer les guillemets restants par &quot; ;
+    # remplacer _ par __ ;
+    # remplacer & par &amp; ;
+    # supprimer les espaces au début, à la fin, ou les espaces internes multiples (puisque pas de guillemets autour de "$str" ou "$output")
+    str_first_char=$(echo $str | cut -c 1)
+    str_last_char=$(echo $str | rev | cut -c 1)
+    if [ "$str_first_char" == '"' ] && [ "$str_last_char" == '"' ]; then
+        str=$(echo $str | cut -c 2- | rev | cut -c 2- | rev)
+    fi
+    output=$(echo $str | head -n1 | sed 's/_/__/g' | sed 's/&/&amp;/g' | sed 's/"/\&quot;/g')
+    echo $output
+}
+
+# Fonction pour un affichage correct dans un émulateur de terminal
+function sanityse_terminal_output() {
+    local str="$@"
+    local output
+    # Conserver une seule ligne ;
+    # supprimer les espaces au début, à la fin, ou les espaces internes multiples (puisque pas de guillemets autour de "$str" ou "$output")
+    output=$(echo $str | head -n1)
+    echo $output
+}
+
+# Fonction pour extraire une partie de chaîne entre deux délimiteurs
+function str_str() {
+    local str
+    unset str
+    if [[ "$1" =~ "$2" ]] && [[ "$1" =~ "$end_delimiter" ]]; then
+        str="${1#*${2}}"
+        str="${str%%${end_delimiter}*}"
+    fi
+    echo -n "$str"
+}

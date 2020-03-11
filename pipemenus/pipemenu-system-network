@@ -1,0 +1,29 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+if [ -e "${default_path}ip" ]; then
+    interfaces=$(${default_path}ip link show | awk -F: '$1>0 {print $2}')
+    if [ ${#interfaces[@]} -gt 0 ]; then
+        z=0
+        for interface in $interfaces; do
+            ip_lan=$(${default_path}ip -f inet -o addr show $interface | cut -d\  -f 7 | cut -d/ -f 1)
+            if [ ! -z "$ip_lan" ]; then
+                interface=$(sanityse_output "$interface")
+                ip_lan=$(sanityse_output "$ip_lan")
+                echo "<item label=\"IP lan ($interface) : $ip_lan\" />"
+                ((z++))
+            fi
+        done
+        if [ "$z" -gt 0 ]; then
+            echo "<separator />"
+        fi
+    fi
+fi
+
+echo "<menu execute=\"${scripts_path}pipemenu-system-network-ip-wan\" id=\"system-network-ip-wan\" label=\"Adresse IP publique\" />"
+
+echo "</openbox_pipe_menu>"
+exit 0

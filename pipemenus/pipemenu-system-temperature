@@ -1,0 +1,127 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_temp
+if [ -e "${default_path}sensors" ]; then
+    # Requiert l'installation du paquet lm-sensors
+    IFS=$' '
+    while read -d $'\xBF' line; do
+        unset temp_device
+        temp_device=$(sanityse_output "$line")
+        if [ ! -z "$temp_device" ]; then
+            is_temp=1
+            echo "<separator label=\"$temp_device\" />"
+            unset is_temp_cpu
+            is_temp_cpu=$(echo "$line" | grep -ioP '^CPU Temperature:\K.*')
+            if [ ! -z "$is_temp_cpu" ]; then
+                temp_cpu=$(echo "$is_temp_cpu" | cut -d '+' -f2 | cut -d 'C' -f1)
+                temp_cpu=$(sanityse_output "$temp_cpu")
+                unset temp_cpu_high temp_cpu_crit
+                temp_cpu_high=$(echo "$is_temp_cpu" | grep -ioP 'high\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                temp_cpu_crit=$(echo "$is_temp_cpu" | grep -ioP 'crit\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                if [ ! -z "$temp_cpu_high" ] && [ ! -z "$temp_cpu_crit" ]; then
+                    temp_cpu_high=$(sanityse_output "$temp_cpu_high")
+                    temp_cpu_crit=$(sanityse_output "$temp_cpu_crit")
+                    echo "<item label=\"CPU : $temp_cpu (élevée $temp_cpu_high, critique $temp_cpu_crit)\" />"
+                elif [ ! -z "$temp_cpu_high" ]; then
+                    temp_cpu_high=$(sanityse_output "$temp_cpu_high")
+                    echo "<item label=\"CPU : $temp_cpu (élevée $temp_cpu_high)\" />"
+                elif [ ! -z "$temp_cpu_crit" ]; then
+                    temp_cpu_crit=$(sanityse_output "$temp_cpu_crit")
+                    echo "<item label=\"CPU : $temp_cpu (critique $temp_cpu_crit)\" />"
+                else
+                    echo "<item label=\"CPU : $temp_cpu\" />"
+                fi
+            fi
+            unset is_temp_mb
+            is_temp_mb=$(echo "$line" | grep -ioP '^MB Temperature:\K.*')
+            if [ ! -z "$is_temp_mb" ]; then
+                temp_mb=$(echo "$is_temp_mb" | cut -d '+' -f2 | cut -d 'C' -f1)
+                temp_mb=$(sanityse_output "$temp_mb")
+                unset temp_mb_high temp_mb_crit
+                temp_mb_high=$(echo "$is_temp_mb" | grep -ioP 'high\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                temp_mb_crit=$(echo "$is_temp_mb" | grep -ioP 'crit\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                if [ ! -z "$temp_mb_high" ] && [ ! -z "$temp_mb_crit" ]; then
+                    temp_mb_high=$(sanityse_output "$temp_mb_high")
+                    temp_mb_crit=$(sanityse_output "$temp_mb_crit")
+                    echo "<item label=\"Carte mère : $temp_mb (élevée $temp_mb_high, critique $temp_mb_crit)\" />"
+                elif [ ! -z "$temp_mb_high" ]; then
+                    temp_mb_high=$(sanityse_output "$temp_mb_high")
+                    echo "<item label=\"Carte mère : $temp_mb (élevée $temp_mb_high)\" />"
+                elif [ ! -z "$temp_mb_crit" ]; then
+                    temp_mb_crit=$(sanityse_output "$temp_mb_crit")
+                    echo "<item label=\"Carte mère : $temp_mb (critique $temp_mb_crit)\" />"
+                else
+                    echo "<item label=\"Carte mère : $temp_mb\" />"
+                fi
+            fi
+            unset is_temp_core
+            is_temp_core=$(echo "$line" | grep -ioP '^Core\s([0-9]+):.*')
+            if [ ! -z "$is_temp_core" ]; then
+                while read -r detail; do
+                    temp_core_nb=$(echo "$detail" | grep -Eo '[0-9]+' | head -n1)
+                    temp_core=$(echo "$detail" | cut -d '+' -f2 | cut -d 'C' -f1)
+                    temp_core=$(sanityse_output "$temp_core")
+                    unset temp_core_high temp_core_crit
+                    temp_core_high=$(echo "$detail" | grep -ioP 'high\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                    temp_core_crit=$(echo "$detail" | grep -ioP 'crit\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                    if [ ! -z "$temp_core_high" ] && [ ! -z "$temp_core_crit" ]; then
+                        temp_core_high=$(sanityse_output "$temp_core_high")
+                        temp_core_crit=$(sanityse_output "$temp_core_crit")
+                        echo "<item label=\"Processeur $temp_core_nb : $temp_core (élevée $temp_core_high, critique $temp_core_crit)\" />"
+                    elif [ ! -z "$temp_core_high" ]; then
+                        temp_core_high=$(sanityse_output "$temp_core_high")
+                        echo "<item label=\"Processeur $temp_core_nb : $temp_core (élevée $temp_core_high)\" />"
+                    elif [ ! -z "$temp_core_crit" ]; then
+                        temp_core_crit=$(sanityse_output "$temp_core_crit")
+                        echo "<item label=\"Processeur $temp_core_nb : $temp_core (critique $temp_core_crit)\" />"
+                    else
+                        echo "<item label=\"Processeur $temp_core_nb : $temp_core\" />"
+                    fi
+                done <<< "$is_temp_core"
+            fi
+            unset is_temp_other
+            is_temp_other=$(echo "$line" | grep -ioP '^temp([0-9]+):.*')
+            if [ ! -z "$is_temp_other" ]; then
+                is_temp_other_count=$(echo "$is_temp_other" | wc -l)
+                while read -r detail; do
+                    temp_other_nb=$(echo "$detail" | grep -Eo '[0-9]+' | head -n1)
+                    if [ "$is_temp_other_count" -gt 1 ]; then
+                        label="Température $temp_other_nb :"
+                    else
+                        label="Température :"
+                    fi
+                    temp_other=$(echo "$detail" | cut -d '+' -f2 | cut -d 'C' -f1)
+                    temp_other=$(sanityse_output "$temp_other")
+                    unset temp_other_high temp_other_crit
+                    temp_other_high=$(echo "$detail" | grep -ioP 'high\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                    temp_other_crit=$(echo "$detail" | grep -ioP 'crit\K.*' | cut -d '+' -f2 | cut -d 'C' -f1)
+                    if [ ! -z "$temp_other_high" ] && [ ! -z "$temp_other_crit" ]; then
+                        temp_other_high=$(sanityse_output "$temp_other_high")
+                        temp_other_crit=$(sanityse_output "$temp_other_crit")
+                        echo "<item label=\"$label $temp_other (élevée $temp_other_high, critique $temp_other_crit)\" />"
+                    elif [ ! -z "$temp_other_high" ]; then
+                        temp_other_high=$(sanityse_output "$temp_other_high")
+                        echo "<item label=\"$label $temp_other (élevée $temp_other_high)\" />"
+                    elif [ ! -z "$temp_other_crit" ]; then
+                        temp_other_crit=$(sanityse_output "$temp_other_crit")
+                        echo "<item label=\"$label $temp_other (critique $temp_other_crit)\" />"
+                    else
+                        echo "<item label=\"$label $temp_other\" />"
+                    fi
+                done <<< "$is_temp_other"
+            fi
+        fi
+    done < <(${default_path}sensors | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    unset IFS
+fi
+
+if [ -z "$is_temp" ]; then
+    echo "<item label=\"Aucune température détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

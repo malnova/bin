@@ -1,0 +1,184 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_ram
+if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
+    IFS=$' '
+    x=0
+    unset ram
+    ram=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-memory)
+    unset ram_slot_total
+    ram_slot_total=$(echo "$ram" | grep -ioP '^\s*Number Of Devices:\K.*')
+    if [ ! -z "$ram_slot_total" ]; then
+        is_ram=1
+        ram_slot_total=$(sanityse_output "$ram_slot_total")
+        echo "<item label=\"Nombre total de slots : $ram_slot_total\" />"
+        ram_slot_used=$(echo "$ram" | grep -cioP '^\tPart Number: (?!\[Empty\])')
+        ram_slot_unused=$(echo "$ram" | grep -ci 'No Module Installed')
+        ram_slot_used=$(( ram_slot_used - ram_slot_unused ))
+        ram_slot_used=$(sanityse_output "$ram_slot_used")
+        echo "<item label=\"Nombre de slots utilisés : $ram_slot_used\" />"
+        ram_slot_free=$(( ram_slot_total - ram_slot_used ))
+        ram_slot_free=$(sanityse_output "$ram_slot_free")
+        echo "<item label=\"Nombre de slots libres : $ram_slot_free\" />"
+        ((x++))
+    fi
+    y=0
+    unset ram_capacity_max
+    ram_capacity_max=$(echo "$ram" | grep -ioP '^\s*Maximum Capacity:\K.*')
+    ram_capacity_max_unit=$(echo "$ram_capacity_max" | awk 'NF>1{print $NF}')
+    ram_capacity_max=$(echo "$ram_capacity_max" | grep -Eo '[0-9]+')
+    ram_memory_size_max=$(echo "$ram" | grep -ioP '^\s*Maximum Total Memory Size:\K.*')
+    ram_memory_size_max_unit=$(echo "$ram_memory_size_max" | awk 'NF>1{print $NF}')
+    ram_memory_size_max=$(echo "$ram_memory_size_max" | grep -Eo '[0-9]+')
+    if [ ! -z "$ram_capacity_max" ]; then
+        is_ram=1
+        if [ "$x" -gt 0 ]; then
+            unset is_ram
+            echo "<separator />"
+        fi
+        if [[ "$ram_capacity_max_unit" = "GB" ]]; then
+            ram_capacity_max=$(( ram_capacity_max * 1024 ))
+        fi
+        if [[ "$ram_memory_size_max_unit" = "GB" ]]; then
+            ram_memory_size_max=$(( ram_memory_size_max * 1024 ))
+        fi
+        if [ -z "$ram_memory_size_max" ] || [[ "$ram_capacity_max" == "$ram_memory_size_max" ]]; then
+            echo "<item label=\"Capacité maximale : $ram_capacity_max Mo\" />"
+        else
+            echo "<item label=\"Capacité maximale : $ram_capacity_max Mo (ou $ram_memory_size_max Mo)\" />"
+        fi
+        ((y++))
+    fi
+    unset ram_capacity_used
+    ram_capacity_used=$(echo "$ram" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
+    if [ ! -z "$ram_capacity_used" ]; then
+        is_ram=1
+        if [ "$x" -gt 0 ] && [ "$y" -eq 0 ]; then
+            unset is_ram
+            echo "<separator />"
+        fi
+        ram_capacity_used=$(echo "$ram_capacity_used" | awk '{ SUM += $1} END { print SUM }')
+        echo "<item label=\"Capacité utilisée : $ram_capacity_used Mo\" />"
+        ((y++))
+    fi
+    unset ram_supported_types
+    ram_supported_types=$(echo "$ram" | sed -n '/Supported Memory Types:/,/Memory Module Voltage/{ /Supported Memory Types:/d; /Memory Module Voltage/d; p }' | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/' | sed 's/,/, /g')
+    if [ ! -z "$ram_supported_types" ]; then
+        is_ram=1
+        if [ "$x" -gt 0 ] && [ "$y" -eq 0 ]; then
+            unset is_ram
+            echo "<separator />"
+        fi
+        ram_supported_types=$(sanityse_output "$ram_supported_types")
+        echo "<item label=\"Types supportés : ${ram_supported_types}\" />"
+        ((y++))
+    fi
+    
+    z=0
+    unset ram_locators
+    while read -d $'\xBF' line; do
+        if [[ "$line" =~ "DMI type 6" ]] && [[ "$line" =~ "Socket Designation:" ]] && [[ "$line" =~ "Type:" ]]; then
+            ram_socket=$(echo "$line" | grep -ioP '^\s*Socket Designation:\K.*')
+            ram_socket_type=$(echo "$line" | grep -ioP '^\s*Type:\K.*')
+            ram_locators="${ram_locators}"$'\n'"${ram_socket}: ${ram_socket_type}"
+        fi
+    done < <(echo "$ram" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    while read -d $'\xBF' line; do
+        if [[ "$line" =~ "DMI type 17" ]] && [[ ! "$line" =~ "No Module Installed" ]]; then
+            unset ram_locator
+            ram_locator=$(echo "$line" | grep -ioP '^\s*Locator:\K.*')
+            if [ ! -z "$ram_locator" ]; then
+                is_ram=1
+                ram_locator=$(sanityse_output "$ram_locator")
+                while read -r locators; do
+                    if [[ "$locators" =~ ^$ram_locator':' ]]; then
+                        ram_locator_type=$(echo "$locators" | grep -ioP "^\s*$ram_locator:\K.*")
+                        ram_locator_type=$(sanityse_output "$ram_locator_type")
+                    fi
+                done <<< "$ram_locators"
+                if [ -z "$ram_locator_type" ]; then
+                    echo "<separator label=\"$ram_locator\" />"
+                else
+                    echo "<separator label=\"$ram_locator (type $ram_locator_type)\" />"
+                fi
+                z=0
+            else
+                if ([ "$z" -eq 0 ] && ([ "$x" -gt 0 ] || [ "$y" -gt 0 ])) || [ "$z" -gt 0 ]; then
+                    echo "<separator />"
+                    z=0
+                fi
+            fi
+            unset ram_size
+            ram_size=$(echo "$line" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
+            if [ ! -z "$ram_size" ]; then
+                is_ram=1
+                echo "<item label=\"Taille : $ram_size Mo\" />"
+                ((z++))
+            fi
+            unset ram_form_factor
+            ram_form_factor=$(echo "$line" | grep -ioP '^\s*Form Factor:\K.*')
+            if [ ! -z "$ram_form_factor" ]; then
+                is_ram=1
+                ram_form_factor=$(sanityse_output "$ram_form_factor")
+                echo "<item label=\"Connecteur : $ram_form_factor\" />"
+                ((z++))
+            fi
+            unset ram_type
+            ram_type=$(echo "$line" | grep -ioP '^\s*Type:\K.*')
+            if [ ! -z "$ram_type" ]; then
+                is_ram=1
+                ram_type=$(sanityse_output "$ram_type")
+                echo "<item label=\"Type : $ram_type\" />"
+                ((z++))
+            fi
+            unset ram_type_detail
+            ram_type_detail=$(echo "$line" | grep -ioP '^\s*Type Detail:\K.*')
+            if [ ! -z "$ram_type_detail" ]; then
+                is_ram=1
+                ram_type_detail=$(sanityse_output "$ram_type_detail")
+                echo "<item label=\"Détail : $ram_type_detail\" />"
+                ((z++))
+            fi
+            unset ram_speed
+            ram_speed=$(echo "$line" | grep -ioP '^\s*Speed:\K.*')
+            if [ ! -z "$ram_speed" ]; then
+                is_ram=1
+                ram_speed=$(sanityse_output "$ram_speed")
+                echo "<item label=\"Vitesse : $ram_speed\" />"
+                ((z++))
+            fi
+            unset ram_manufacturer
+            ram_manufacturer=$(echo "$line" | grep -ioP '^\s*Manufacturer:\K.*')
+            if [ ! -z "$ram_manufacturer" ]; then
+                is_ram=1
+                ram_manufacturer=$(sanityse_output_with_quotes "$ram_manufacturer")
+                echo "<item label=\"Fabricant : $ram_manufacturer\" />"
+                ((z++))
+            fi
+            unset ram_part_number
+            ram_part_number=$(echo "$line" | grep -ioP '^\s*Part Number:\K.*')
+            if [ ! -z "$ram_part_number" ]; then
+                is_ram=1
+                ram_part_number=$(sanityse_output "$ram_part_number")
+                echo "<item label=\"Référence : $ram_part_number\" />"
+                ((z++))
+            fi
+        fi
+    done < <(echo "$ram" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    unset IFS
+    if [ ! -z "$is_ram" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher plus d'informations (dmidecode)\"><action name=\"Execute\"><command>$(cat_file "${scripts_path}pipemenu-system-hardware-dmidecode-memory")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_ram" ]; then
+    echo "<item label=\"Aucune RAM détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

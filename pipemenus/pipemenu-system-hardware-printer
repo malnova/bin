@@ -1,0 +1,127 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_printer
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset printers
+    printers="$(${default_path}hwinfo --printer | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    printer_nb=0
+    while IFS= read -r line; do
+        declare -a printer_connector
+        printer_connector[$printer_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
+        if [ ! -z "${printer_connector[$printer_nb]}" ]; then
+            is_printer=1
+            printer_connector[$printer_nb]=$(sanityse_output "${printer_connector[$printer_nb]}")
+            if [ "$printer_nb" -eq 0 ] || [ "${printer_connector[$printer_nb]}" != "${printer_connector[$printer_nb-1]}" ]; then
+                echo "<separator label=\"Port ${printer_connector[printer_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((printer_nb++))
+        fi
+        unset printer_model
+        printer_model=$(str_str "$line" "Model:")
+        if [ ! -z "$printer_model" ]; then
+            is_printer=1
+            printer_model=$(sanityse_output "$printer_model")
+            echo "<item label=\"Modèle : $printer_model\" />"
+            ((z++))
+        fi
+        unset printer_vendor
+        printer_vendor=$(str_str "$line" "Vendor:")
+        if [ ! -z "$printer_vendor" ]; then
+            is_printer=1
+            printer_vendor=$(sanityse_output_with_quotes "$printer_vendor")
+            echo "<item label=\"Fabricant : $printer_vendor\" />"
+            ((z++))
+        fi
+        unset printer_driver
+        printer_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$printer_driver" ]; then
+            printer_driver=$(sanityse_output "$printer_driver")
+        fi
+        unset printer_driver_status_all
+        printer_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset printer_driver_status printer_status
+        if [ ! -z "$printer_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    printer_driver_status=$(echo "$printer_driver_status,$driver_new")
+                    printer_status=$(echo "$printer_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    printer_driver_status=$(echo "$printer_driver_status,$driver_new")
+                    printer_status=$(echo "$printer_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    printer_driver_status=$(echo "$printer_driver_status,$driver_new")
+                    printer_status=$(echo "$printer_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    printer_driver_status=$(echo "$printer_driver_status,$driver_new")
+                    printer_status=$(echo "$printer_status,$driver_new inactifs")
+                fi
+                printer_driver_status=$(echo "$printer_driver_status" | sed -e 's/^[,]*//')
+                printer_status=$(echo "$printer_status" | sed -e 's/^[,]*//')
+            done <<< "$printer_driver_status_all"
+        fi
+        unset printer_driver_modules
+        printer_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$printer_driver_modules" ]; then
+            printer_driver_modules=$(sanityse_output "$printer_driver_modules")
+        fi
+        if [ -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ]; then
+            is_printer=1
+            echo "<item label=\"Driver(s) : $printer_driver_status\" />"
+            ((z++))
+        elif [ ! -z "$printer_driver" ] && [ -z "$printer_driver_status" ]; then
+            is_printer=1
+            echo "<item label=\"Driver(s) : $printer_driver\" />"
+            ((z++))
+        elif [ ! -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ] && [ "$printer_driver" == "$printer_driver_status" ]; then
+            is_printer=1
+            echo "<item label=\"Driver(s) : $printer_driver\" />"
+            ((z++))
+        elif [ ! -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ] && [ "$printer_driver" != "$printer_driver_status" ]; then
+            is_printer=1
+            printer_driver=$(echo "$printer_driver ($printer_driver_status)")
+            echo "<item label=\"Driver(s) : $printer_driver\" />"
+            ((z++))
+        fi
+        if [ ! -z "$printer_driver_modules" ]; then
+            is_printer=1
+            echo "<item label=\"Module(s) : $printer_driver_modules\" />"
+            ((z++))
+        fi
+        if [ ! -z "$printer_status" ]; then
+            is_printer=1
+            echo "<item label=\"État : $printer_status\" />"
+            ((z++))
+        fi
+    done <<< "$printers"
+    if [ ! -z "$is_printer" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --printer")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --printer")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_printer" ]; then
+    echo "<item label=\"Aucune imprimante détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

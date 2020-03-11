@@ -1,0 +1,446 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_system
+for f in /etc/*-release; do
+    if [ -e "$f" ]; then
+        is_release_file=true
+        break
+    else
+        is_release_file=false
+    fi
+done
+for f in /etc/*_version; do
+    if [ -e "$f" ]; then
+        is_version_file=true
+        break
+    else
+        is_version_file=false
+    fi
+done
+
+# Modèle de l'ordinateur
+if [ -e "/sys/devices/virtual/dmi/id/product_name" ]; then
+    unset system_model
+    system_model=$(cat /sys/devices/virtual/dmi/id/product_name)
+    if [ ! -z "$system_model" ] && [[ ! "$system_model" =~ "System Product Name" ]]; then
+        is_system=1
+        system_model=$(sanityse_output "$system_model")
+        echo "<item label=\"Modèle : $system_model\" />"
+    fi
+fi
+
+# Nom d'hôte (hostname)
+unset system_host
+system_host=$(hostname)
+if [ ! -z "$system_host" ]; then
+    is_system=1
+    system_host=$(sanityse_output "$system_host")
+    echo "<item label=\"Nom d'hôte : $system_host\" />"
+fi
+
+# Domaine
+unset system_domain
+system_domain=$(dnsdomainname)
+if [ ! -z "$system_domain" ]; then
+    is_system=1
+    system_domain=$(sanityse_output "$system_domain")
+    echo "<item label=\"Domaine : $system_domain\" />"
+fi
+
+echo "<separator />"
+
+# Nom et version de la distribution
+unset system_distro system_version
+if [ -e "${default_path}lsb_release" ]; then
+    unset system_release system_codename
+    system_distro=$(${default_path}lsb_release -i | cut -d ':' -f2 | sed s/'^\t'//)
+    system_release=$(${default_path}lsb_release -r | cut -d ':' -f2 | sed s/'^\t'//)
+    system_codename=$(${default_path}lsb_release -c | cut -d ':' -f2 | sed s/'^\t'//)
+    if [ ! -z "$system_release" ]; then
+        if [ ! -z "$system_codename" ]; then
+            system_version="$system_release ($system_codename)"
+        else
+            system_version="$system_release"
+        fi
+    fi
+elif [ "$is_release_file" = true ]; then
+    system_distro=$(find /etc/*-release -exec cat {} \; | grep NAME | tail -n1 | cut -d '=' -f2 | tr -d '"')
+    system_version=$(find /etc/*-release -exec cat {} \; | grep VERSION | tail -n1 | cut -d '=' -f2 | tr -d '"')
+elif [ -e "/etc/system-release" ]; then
+    system_distro=$(cat /etc/system-release)
+elif [ -e "/etc/issue" ]; then
+    system_distro=$(cat /etc/issue)
+else
+    system_distro=$(${default_path}uname -s)
+fi
+if [ "$is_version_file" = true ]; then
+    unset system_release
+    system_release=$(find /etc/*_version -exec cat {} \; | tail -n1)
+    if [ ! -z "$system_release" ]; then
+        if [ ! -z "$system_version" ]; then
+            system_version="$system_version ($system_release)"
+        else
+            system_version="$system_release"
+        fi
+    fi
+fi
+if [ ! -z "$system_distro" ]; then
+    is_system=1
+    system_distro=$(sanityse_output "$system_distro")
+    echo "<item label=\"Distribution : $system_distro\" />"
+fi
+if [ ! -z "$system_version" ]; then
+    is_system=1
+    system_version=$(sanityse_output "$system_version")
+    echo "<item label=\"Version : $system_version\" />"
+fi
+
+# Version du noyau (kernel)
+unset system_kernel
+system_kernel=$(${default_path}uname -r)
+if [ ! -z "system_$kernel" ]; then
+    is_system=1
+    system_kernel=$(sanityse_output "$system_kernel")
+    echo "<item label=\"Noyau : $system_kernel\" />"
+fi
+
+# Architecture (32 bits, 64 bits...)
+unset system_arch
+system_arch=$(${default_path}uname -m)
+if [ ! -z "$system_arch" ]; then
+    unset system_type
+    system_type=$(echo "$system_arch" | sed 's/x86_//;s/i[3-6]86/32/')
+    if [ ! -z "$system_type" ]; then
+        is_system=1
+        system_arch=$(sanityse_output "$system_arch")
+        system_type=$(sanityse_output "$system_type")
+        echo "<item label=\"Architecture : $system_arch ($system_type bits)\" />"
+    else
+        is_system=1
+        system_arch=$(sanityse_output "$system_arch")
+        echo "<item label=\"Architecture : $system_arch\" />"
+    fi
+fi
+
+echo "<separator />"
+
+# Uptime
+if [ -e "/proc/uptime" ]; then
+    unset system_uptime
+    system_uptime=$(cat /proc/uptime)
+    if [ ! -z "$system_uptime" ]; then
+        system_uptime=${system_uptime%%.*}
+        system_uptime_secondes=$(( system_uptime % 60 ))
+        system_uptime_minutes=$(( system_uptime / 60 % 60 ))
+        system_uptime_hours=$(( system_uptime / 60 / 60 % 24 ))
+        system_uptime_days=$(( system_uptime / 60 / 60 / 24 ))
+        unset system_uptime
+        if [ $system_uptime_days -gt 0 ]; then
+            system_uptime="$system_uptime_days j"
+        fi
+        if [ $system_uptime_hours -gt 0 ]; then
+            system_uptime="$system_uptime $system_uptime_hours h"
+        fi
+        if [ $system_uptime_minutes -gt 0 ]; then
+            system_uptime="$system_uptime $system_uptime_minutes min"
+        fi
+        if [ $system_uptime_secondes -gt 0 ]; then
+            system_uptime="$system_uptime $system_uptime_secondes s"
+        fi
+        if [ ! -z "$system_uptime" ]; then
+            is_system=1
+            system_uptime=$(sanityse_output "$system_uptime")
+            echo "<item label=\"Uptime : $system_uptime\" />"
+        fi
+    fi
+fi
+
+# Shell (repris du code de neofetch sur GitHub)
+unset shell system_shell
+shell_path="off"
+shell_version="on"
+case "$shell_path" in
+    "on")  shell="$SHELL " ;;
+    "off") shell="${SHELL##*/} " ;;
+esac
+if [[ "$shell_version" == "on" ]]; then
+    case "${shell_name:=${SHELL##*/}}" in
+        "bash") shell+="${BASH_VERSION/-*}" ;;
+        "sh" | "ash" | "dash") ;;
+        "mksh" | "ksh")
+            shell+="$("$SHELL" -c "printf %s \$KSH_VERSION")"
+            shell="${shell/ * KSH}"
+            shell="${shell/version}"
+        ;;
+        "tcsh")
+            shell+="$("$SHELL" -c "printf %s \$tcsh")"
+        ;;
+        *)
+            shell+="$("$SHELL" --version 2>&1)"
+            shell="${shell/ "${shell_name}"}"
+        ;;
+    esac
+    shell="${shell/, version}"
+    shell="${shell/xonsh\//xonsh }"
+    shell="${shell/options*}"
+    shell="${shell/\(*\)}"
+fi
+if [ ! -z "$shell" ]; then
+    is_system=1
+    system_shell=$(sanityse_output "$shell")
+    echo "<separator />"
+    echo "<item label=\"Shell : $system_shell\" />"
+fi
+
+# Desktop Environment / Window Manager (repris du code de neofetch sur GitHub)
+unset wm id de system_wm system_de
+if [[ "$WAYLAND_DISPLAY" ]]; then
+    wm="$(ps -e | grep -m 1 -o -F \
+        -e "arcan" \
+        -e "asc" \
+        -e "clayland" \
+        -e "dwc" \
+        -e "fireplace" \
+        -e "greenfield" \
+        -e "grefsen" \
+        -e "lipstick" \
+        -e "maynard" \
+        -e "mazecompositor" \
+        -e "motorcar" \
+        -e "orbital" \
+        -e "orbment" \
+        -e "perceptia" \
+        -e "rustland" \
+        -e "sway" \
+        -e "ulubis" \
+        -e "velox" \
+        -e "wavy" \
+        -e "way-cooler" \
+        -e "wayfire" \
+        -e "wayhouse" \
+        -e "westeros" \
+        -e "westford" \
+        -e "weston")"
+elif [[ "$DISPLAY" ]]; then
+    id="$(xprop -root -notype _NET_SUPPORTING_WM_CHECK)"
+    id="${id##* }"
+    wm="$(xprop -id "$id" -notype -len 100 -f _NET_WM_NAME 8t)"
+    wm="${wm/*WM_NAME = }"
+    wm="${wm/\"}"
+    wm="${wm/\"*}"
+    [[ "$wm" =~ "WINDOWMAKER" ]] && wm="wmaker"
+    [[ -z "$wm" ]] && \
+        wm="$(ps -e | grep -m 1 -o -F \
+            -e "catwm" \
+            -e "dwm" \
+            -e "2bwm" \
+            -e "monsterwm" \
+            -e "tinywm")"
+fi
+if [[ "$XDG_CURRENT_DESKTOP" ]]; then
+    de="${XDG_CURRENT_DESKTOP/'X-'}"
+    de="${de/Budgie:GNOME/Budgie}"
+    de="${de/:Unity7:ubuntu}"
+elif [[ "$DESKTOP_SESSION" ]]; then
+    de="${DESKTOP_SESSION##*/}"
+elif [[ "$GNOME_DESKTOP_SESSION_ID" ]]; then
+    de="GNOME"
+elif [[ "$MATE_DESKTOP_SESSION_ID" ]]; then
+    de="MATE"
+elif [[ "$TDE_FULL_SESSION" ]]; then
+    de="Trinity"
+fi
+[[ "$de" == "$wm" ]] && { unset -v de; }
+[[ "$DISPLAY" && -z "$de" ]] && \
+    de="$(xprop -root | awk '/KDE_SESSION_VERSION|^_MUFFIN|xfce4|xfce5/')"
+case "$de" in
+    "KDE_SESSION_VERSION"*) de="KDE${de/* = }" ;;
+    *"xfce4"*) de="Xfce4" ;;
+    *"xfce5"*) de="Xfce5" ;;
+    *"xfce"*)  de="Xfce" ;;
+    *"mate"*)  de="MATE" ;;
+    *"MUFFIN"* | "Cinnamon")
+        de="$(cinnamon --version)"; de="${de:-Cinnamon}"
+    ;;
+    *"GNOME"*)
+        de="$(gnome-shell --version)"
+        de="${de/Shell }"
+    ;;
+esac
+if [ ! -z "$de" ]; then
+    is_system=1
+    system_de=$(sanityse_output "$de")
+    echo "<item label=\"DE : $system_de\" />"
+fi
+if [ ! -z "$wm" ]; then
+    system_wm=$(sanityse_output "$wm")
+    if [ -z "$de" ] || ([ ! -z "$system_de" ] && [[ $(tr "[:upper:]" "[:lower:]" <<<"$system_wm") != $(tr "[:upper:]" "[:lower:]" <<<"$system_de") ]]); then
+        echo "<item label=\"WM : $system_wm\" />"
+    fi
+fi
+
+# Thème d'interface, thème d'icônes, police (repris du code de neofetch sur GitHub)
+trim() {
+    set -f
+    set -- $*
+    printf '%s\n' "${*//[[:space:]]/ }"
+    set +f
+}
+trim_quotes() {
+    trim_output="${1//\'}"
+    trim_output="${trim_output//\"}"
+    printf "%s" "$trim_output"
+}
+kde_config_dir() {
+    if [[ "$kde_config_dir" ]]; then
+        return
+    elif type -p kf5-config &>/dev/null; then
+        kde_config_dir="$(kf5-config --path config)"
+    elif type -p kde4-config &>/dev/null; then
+        kde_config_dir="$(kde4-config --path config)"
+    elif type -p kde-config &>/dev/null; then
+        kde_config_dir="$(kde-config --path config)"
+    elif [[ -d "${HOME}/.kde4" ]]; then
+        kde_config_dir="${HOME}/.kde4/share/config"
+    elif [[ -d "${HOME}/.kde3" ]]; then
+        kde_config_dir="${HOME}/.kde3/share/config"
+    fi
+    kde_config_dir="${kde_config_dir/$'/:'*}"
+}
+get_style() {
+    unset gtk2_theme gtk3_theme theme path
+    XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+    if [[ "$DISPLAY" ]]; then
+        case "$de" in
+            "KDE"*)
+                kde_config_dir
+                if [[ -f "${kde_config_dir}/kdeglobals" ]]; then
+                    kde_config_file="${kde_config_dir}/kdeglobals"
+                    kde_theme="$(grep "^${kde}" "$kde_config_file")"
+                    kde_theme="${kde_theme/*=}"
+                    if [[ "$kde" == "font" ]]; then
+                        kde_font_size="${kde_theme#*,}"
+                        kde_font_size="${kde_font_size/,*}"
+                        kde_theme="${kde_theme/,*} ${kde_theme/*,} ${kde_font_size}"
+                    fi
+                    kde_theme="$kde_theme [KDE], "
+                else
+                    kde_theme="le thème KDE n'a pas été trouvé"
+                fi
+            ;;
+            *"Cinnamon"*)
+                if type -p gsettings >/dev/null; then
+                    gtk3_theme="$(gsettings get org.cinnamon.desktop.interface "$gsettings")"
+                    gtk2_theme="$gtk3_theme"
+                fi
+            ;;
+            "Gnome"* | "Unity"* | "Budgie"*)
+                if type -p gsettings >/dev/null; then
+                    gtk3_theme="$(gsettings get org.gnome.desktop.interface "$gsettings")"
+                    gtk2_theme="$gtk3_theme"
+                elif type -p gconftool-2 >/dev/null; then
+                    gtk2_theme="$(gconftool-2 -g /desktop/gnome/interface/"$gconf")"
+                fi
+            ;;
+            "Mate"*)
+                gtk3_theme="$(gsettings get org.mate.interface "$gsettings")"
+                gtk2_theme="$gtk3_theme"
+            ;;
+            "Xfce"*)
+                type -p xfconf-query >/dev/null && \
+                    gtk2_theme="$(xfconf-query -c xsettings -p "$xfconf")"
+            ;;
+        esac
+        if [[ -z "$gtk2_theme" ]]; then
+            if [[ -f "${GTK2_RC_FILES:-${HOME}/.gtkrc-2.0}" ]]; then
+                gtk2_theme="$(grep "^[^#]*${name}" "${GTK2_RC_FILES:-${HOME}/.gtkrc-2.0}")"
+            elif [[ -f "/etc/gtk-2.0/gtkrc" ]]; then
+                gtk2_theme="$(grep "^[^#]*${name}" /etc/gtk-2.0/gtkrc)"
+            elif [[ -f "/usr/share/gtk-2.0/gtkrc" ]]; then
+                gtk2_theme="$(grep "^[^#]*${name}" /usr/share/gtk-2.0/gtkrc)"
+            fi
+            gtk2_theme="${gtk2_theme/${name}*=}"
+        fi
+        if [[ -z "$gtk3_theme" ]]; then
+            if [[ -f "${XDG_CONFIG_HOME}/gtk-3.0/settings.ini" ]]; then
+                gtk3_theme="$(grep "^[^#]*$name" "${XDG_CONFIG_HOME}/gtk-3.0/settings.ini")"
+            elif type -p gsettings >/dev/null; then
+                gtk3_theme="$(gsettings get org.gnome.desktop.interface "$gsettings")"
+            elif [[ -f "/usr/share/gtk-3.0/settings.ini" ]]; then
+                gtk3_theme="$(grep "^[^#]*$name" /usr/share/gtk-3.0/settings.ini)"
+            elif [[ -f "/etc/gtk-3.0/settings.ini" ]]; then
+                gtk3_theme="$(grep "^[^#]*$name" /etc/gtk-3.0/settings.ini)"
+            fi
+            gtk3_theme="${gtk3_theme/${name}*=}"
+        fi
+        gtk2_theme="$(trim "$gtk2_theme")"
+        gtk3_theme="$(trim "$gtk3_theme")"
+        gtk2_theme="$(trim_quotes "$gtk2_theme")"
+        gtk3_theme="$(trim_quotes "$gtk3_theme")"
+        if [[ "$gtk2_theme" && "$gtk2_theme" == "$gtk3_theme" ]]; then
+            gtk3_theme+=" [GTK2/3]"
+            unset gtk2_theme
+        elif [[ "$gtk2_theme" && "$gtk3_theme" ]]; then
+            gtk2_theme+=" [GTK2], "
+            gtk3_theme+=" [GTK3] "
+        else
+            [[ "$gtk2_theme" ]] && gtk2_theme+=" [GTK2] "
+            [[ "$gtk3_theme" ]] && gtk3_theme+=" [GTK3] "
+        fi
+        theme="${kde_theme}${gtk2_theme}${gtk3_theme}"
+        theme="${theme%, }"
+        if [[ "$gtk_shorthand" == "on" ]]; then
+            theme="${theme// '[GTK'[0-9]']'}"
+            theme="${theme/ '[GTK2/3]'}"
+            theme="${theme/ '[KDE]'}"
+        fi
+    fi
+}
+unset system_theme
+name="gtk-theme-name"
+gsettings="gtk-theme"
+gconf="gtk_theme"
+xfconf="/Net/ThemeName"
+kde="Name"
+get_style
+if [ ! -z "$theme" ]; then
+    is_system=1
+    system_theme=$(sanityse_output "$theme")
+    echo "<separator />"
+    echo "<item label=\"Thème d'interface : $system_theme\" />"
+fi
+unset system_icons
+name="gtk-icon-theme-name"
+gsettings="icon-theme"
+gconf="icon_theme"
+xfconf="/Net/IconThemeName"
+kde="Theme"
+get_style
+if [ ! -z "$theme" ]; then
+    is_system=1
+    system_icons=$(sanityse_output "$theme")
+    echo "<item label=\"Thème d'icônes : $system_icons\" />"
+fi
+unset system_font
+name="gtk-font-name"
+gsettings="font-name"
+gconf="font_theme"
+xfconf="/Gtk/FontName"
+kde="font"
+get_style
+if [ ! -z "$theme" ]; then
+    is_system=1
+    system_font=$(sanityse_output "$theme")
+    echo "<item label=\"Police : $system_font\" />"
+fi
+
+if [ -z "$is_system" ]; then
+    echo "<item label=\"Aucune information récupérée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

@@ -1,0 +1,30 @@
+#!/bin/bash
+. default-commands
+
+echo "<openbox_pipe_menu>"
+
+# Matériel
+echo "<menu execute=\"${scripts_path}pipemenu-system-hardware\" id=\"system-hardware\" label=\"Matériel\" />"
+
+# Mémoire
+echo "<menu execute=\"${scripts_path}pipemenu-system-memory\" id=\"system-memory\" label=\"Mémoire\" />"
+
+# Partitions
+echo "<menu execute=\"${scripts_path}pipemenu-system-partitions\" id=\"system-partitions\" label=\"Partitions\" />"
+
+# Réseau
+echo "<menu execute=\"${scripts_path}pipemenu-system-network\" id=\"system-network\" label=\"Réseau\" />"
+
+# Système
+echo "<menu execute=\"${scripts_path}pipemenu-system-system\" id=\"system-system\" label=\"Système\" />"
+
+if [ -e "${default_path}sensors" ]; then
+    # Requiert l'installation du paquet lm-sensors
+    echo "<separator label=\"lm-sensors\" />"
+    
+    # Températures
+    echo "<menu execute=\"${scripts_path}pipemenu-system-temperature\" id=\"system-temperature\" label=\"Températures\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

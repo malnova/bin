@@ -1,0 +1,103 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_mem
+if [ -e "/proc/meminfo" ]; then
+    IFS=$' '
+    unset mem
+    pattern=('^MemTotal:' '^MemFree:' '^Buffers:' '^Cached:' '^SwapTotal:' '^SwapFree:' '^SwapCached:')
+    mem=$(for pat in "${pattern[@]}"; do echo $(cat /proc/meminfo | grep -i -m1 $pat); done)
+    if [ ! -z "$mem" ]; then
+        # RAM
+        echo "<separator label=\"RAM\" />"
+        unset ram_total
+        ram_total=$(echo "$mem" | grep -ioP '^MemTotal:\K.*' | grep -Eo '[0-9]+')
+        if [ ! -z "$ram_total" ]; then
+            is_mem=1
+            ram_total=$(( ram_total / 1024 ))
+            echo "<item label=\"Totale : $ram_total Mo\" />"
+        fi
+        unset ram_free ram_buffers ram_cached
+        ram_free=$(echo "$mem" | grep -ioP '^MemFree:\K.*' | grep -Eo '[0-9]+')
+        ram_buffers=$(echo "$mem" | grep -ioP '^Buffers:\K.*' | grep -Eo '[0-9]+')
+        ram_cached=$(echo "$mem" | grep -ioP '^Cached:\K.*' | grep -Eo '[0-9]+')
+        if [ ! -z "$ram_free" ] && [ ! -z "$ram_buffers" ] && [ ! -z "$ram_cached" ]; then
+            is_mem=1
+            ram_free=$(( (ram_free + ram_buffers + ram_cached) / 1024 ))
+            echo "<item label=\"Libre : $ram_free Mo\" />"
+        fi
+        if [ ! -z "$ram_total" ] && [ ! -z "$ram_free" ]; then
+            is_mem=1
+            ram_used=$(( ram_total - ram_free ))
+            ram_percent=$(( 200 * ram_used / ram_total % 2 + 100 * ram_used / ram_total ))
+            echo "<item label=\"Utilisée : $ram_used Mo ($ram_percent %)\" />"
+        fi
+        # Swap
+        echo "<separator label=\"Swap\" />"
+        unset swap_total
+        swap_total=$(echo "$mem" | grep -ioP '^SwapTotal:\K.*' | grep -Eo '[0-9]+')
+        if [ ! -z "$swap_total" ]; then
+            is_mem=1
+            swap_total=$(( swap_total / 1024 ))
+            echo "<item label=\"Totale : $swap_total Mo\" />"
+        fi
+        unset swap_free swap_cached
+        swap_free=$(echo "$mem" | grep -ioP '^SwapFree:\K.*' | grep -Eo '[0-9]+')
+        swap_cached=$(echo "$mem" | grep -ioP '^SwapCached:\K.*' | grep -Eo '[0-9]+')
+        if [ ! -z "$swap_free" ] && [ ! -z "$swap_cached" ]; then
+            is_mem=1
+            swap_free=$(( (swap_free + swap_cached) / 1024 ))
+            echo "<item label=\"Libre : $swap_free Mo\" />"
+        fi
+        if [ ! -z "$swap_total" ] && [ ! -z "$swap_free" ]; then
+            is_mem=1
+            swap_used=$(( swap_total - swap_free ))
+            swap_percent=$(( 200 * swap_used / swap_total % 2 + 100 * swap_used / swap_total ))
+            echo "<item label=\"Utilisée : $swap_used Mo ($swap_percent %)\" />"
+        fi
+    fi
+    unset IFS
+elif [ -e "${default_path}free" ]; then
+    IFS=$' '
+    unset ram
+    # RAM
+    ram=$(${default_path}free -tmo | grep -i '^Mem:')
+    if [ ! -z "$ram" ]; then
+        is_mem=1
+        echo "<separator label=\"RAM\" />"
+        ram_total=$(echo "$ram" | awk '{print $2}')
+        ram_free=$(echo "$ram" | awk '{print $4+$6+$7}')
+        ram_used=$(echo "$ram" | awk '{print $2-$4-$6-$7}')
+        ram_percent=$(( 200 * ram_used / ram_total % 2 + 100 * ram_used / ram_total ))
+        echo "<item label=\"Totale : $ram_total Mo\" />"
+        echo "<item label=\"Utilisée : $ram_used Mo ($ram_percent %)\" />"
+        is_mem=1
+        echo "<item label=\"Libre : $ram_free Mo\" />"
+        is_mem=1
+    fi
+    # Swap
+    unset swap
+    swap=$(${default_path}free -tmo | grep -i '^Swap:')
+    if [ ! -z "$swap" ]; then
+        is_mem=1
+        echo "<separator label=\"Swap\" />"
+        swap_total=$(echo "$swap" | awk '{print $2}')
+        swap_free=$(echo "$swap" | awk '{print $4+$6+$7}')
+        swap_used=$(echo "$swap" | awk '{print $2-$4-$6-$7}')
+        swap_percent=$(( 200 * swap_used / swap_total % 2 + 100 * swap_used / swap_total ))
+        echo "<item label=\"Totale : $swap_total Mo\" />"
+        echo "<item label=\"Utilisée : $swap_used Mo ($swap_percent %)\" />"
+        echo "<item label=\"Libre : $swap_free Mo\" />"
+    fi
+    unset IFS
+fi
+
+if [ -z "$is_mem" ]; then
+    echo "<item label=\"Mémoire non détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

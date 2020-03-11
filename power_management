@@ -1,0 +1,151 @@
+#!/bin/bash
+## OPTIONS D'ALIMENTATION
+# Certaines options sont définies dans le fichier /etc/systemd/logind.conf
+# (voir "man logind.conf" pour plus de détails) : par exemple, la
+# désactivation du bouton "Power", ou la désactivation de la mise en veille
+# lorsque l'écran est rabattu.
+#
+# Comme pour les claviers, souris et touchpads (paramétrés dans le fichier
+# ~/.config/openbox/autostart), on peut définir les paramètres des écrans
+# grâce à un fichier à placer dans /etc/X11/xorg.conf.d/
+# Exemple : /etc/X11/xorg.conf.d/10-monitor.conf
+# Section "Monitor"
+#   Identifier "eDP1"
+#   Option "DPMS" "false"
+#   ...
+#EndSection
+#
+# OU on peut utiliser xset comme ci-dessous.
+
+
+# DPMS (Display Power Management Signaling = économie d'énergie ;
+# cela ne concerne que l'écran !)
+#
+# Pour voir les paramètres actuels : xset q
+#
+# Désactiver DPMS : xset -dpms
+# Pour le réactiver : xset +dpms
+# Pour le configurer : xset dpms [Standby] [Suspend] [Off]
+# [standby], [suspend], [off] (optionnels) = temps, en secondes, avant
+# écran vide (noir) / mise en veille / arrêt de l'écran ; une valeur de 0
+# désactive le mode en question. Exemple : xset dpms 180 0 300
+# Pour forcer la mise en veille (OU l'hibernation OU l'arrêt immédiat)
+# de l'écran : xset dpms force standby (OU suspend OU off)
+# Activer DPMS peut entraîne le verrouillage de la session !
+#
+if [ "$1" = "start" ]; then
+    # Réglage de DPMS (pour activation possible avec C-A-s) et désactivation
+    if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
+        (sleep 2 && xset dpms 0 0 300 && xset -dpms) &
+    elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
+        (sleep 2 && xset dpms 0 0 180 && xset -dpms) &
+    else
+        file_path=$(realpath $0)
+        dunstify -r 16384 -t 4000 "Erreur : le nom d'hôte $HOSTNAME est inconnu dans ${file_path}."
+        exit 1
+    fi
+    # Désactiver l'économiseur d'écran (écran noir)
+    (sleep 2 && xset s off) &
+fi
+
+
+# VERROUILLAGE ET / OU MISE EN VEILLE
+# NOM du processus correspondant au locker utilisé (xautolock, xidlehook...) 
+locker="xidlehook"
+# COMMANDE à utiliser pour le locker
+# Si le locker utilisé est xautolock, il nécessite le chemin COMPLET (par ex.
+# avec /bin/ ou /usr/bin/... ou ${default_path}) dans la commande
+# Voir la page suivante pour les options possibles avec systemctl :
+# https://wiki.archlinux.org/index.php/Systemd
+# Pour une explication des options de gestion d'énergie :
+# https://wiki.archlinux.org/index.php/Power_management/Suspend_and_hibernate
+# 1. Suspend to RAM (= mise en veille) :
+# sortie de veille rapide, mais s'il n'y a plus de courant ou de batterie,
+# les données sont perdues
+# Commande : systemctl suspend
+# 2. Suspend to disk (= hibernation) :
+# contrairement à la mise en veille, l'ordinateur est complètement éteint,
+# sans aucune consommation d'énergie ; cycles d'écriture sur le disque (en swap)
+# et sortie d'hibernation plus lente, mais le système est toujours restauré
+# à l'identique lors de la reprise
+# Commande : systemctl hibernate
+# 3. Suspend to both :
+# Commande : systemctl hybrid-sleep
+if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
+    locker_command="xidlehook --not-when-fullscreen \
+        --timer 330 \
+            'light-locker-command -l' \
+            ''"
+elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
+    locker_command="xidlehook --not-when-fullscreen \
+        --timer 180 \
+            'backlight -save; backlight -dim' \
+            'backlight -restore' \
+        --timer 10 \
+            'slock' \
+            'backlight -restore' \
+        --timer 10 \
+            'systemctl suspend' \
+            'backlight -restore'"
+else
+    file_path=$(realpath $0)
+    dunstify -r 16384 -t 4000 "Erreur : le nom d'hôte $HOSTNAME est inconnu dans ${file_path}."
+    exit 1
+fi
+
+
+# FONCTIONS D'ACTIVATION / DÉSACTIVATION
+# Utiliser mkdir pour éviter plusieurs appels simultanés au script
+#
+notification_on_restart="La mise en veille est activée."
+notification_on_kill="La mise en veille est désactivée."
+if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
+    locker_dir="/tmp/locker.exclusivelock"
+    if mkdir "$locker_dir"; then
+        trap 'rm -rf "$locker_dir"; exit' 0 1 2 3 13 15
+        if [ "$2" = "notification_off" ]; then
+            notification=0
+        else
+            notification=1
+        fi
+        if [ "$1" = "start" ]; then
+            eval $locker_command &>/dev/null &
+        elif [ "$1" = "kill" ]; then
+            if [ "$(pidof $locker)" ]; then
+                killall -q $locker
+                if [ "$notification" = "1" ]; then
+                    dunstify -r 16384 -t 2000 "$notification_on_kill"
+                fi
+            fi
+        elif [ "$1" = "restart" ]; then
+            if [ "$(pidof $locker)" ]; then
+                killall -q $locker
+                sleep 1
+                eval $locker_command &>/dev/null &
+            else
+                eval $locker_command &>/dev/null &
+            fi
+            if [ "$notification" = "1" ]; then
+                dunstify -r 16384 -t 2000 "$notification_on_restart"
+            fi
+        elif [ "$1" = "toggle" ]; then
+            if [ "$(pidof $locker)" ]; then
+                killall -q $locker
+                if [ "$notification" = "1" ]; then
+                    dunstify -r 16384 -t 2000 "$notification_on_kill"
+                fi
+            else
+                eval $locker_command &>/dev/null &
+                if [ "$notification" = "1" ]; then
+                    dunstify -r 16384 -t 2000 "$notification_on_restart"
+                fi
+            fi
+        elif [ "$1" = "status" ]; then
+            if [ "$(pidof $locker)" ]; then
+                dunstify -r 16384 -t 2000 "$notification_on_restart"
+            else
+                dunstify -r 16384 -t 2000 "$notification_on_kill"
+            fi
+        fi
+    fi
+fi

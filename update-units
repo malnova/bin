@@ -1,0 +1,8 @@
+#!/bin/bash
+# Si erreur dans units_cur lors de la mise à jour
+# (ModuleNotFoundError: No module named 'requests'),
+# c'est que le module python-requests n'est pas installé.
+# Pour l'installer : sudo pacman -S python-requests
+# Cf. le bug : https://bugs.archlinux.org/task/57632
+
+sudo units_cur

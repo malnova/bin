@@ -1,0 +1,112 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_pppoe
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset pppoes
+    pppoes="$(${default_path}hwinfo --pppoe | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sed 's/^[^:]*: //g' | sort)"
+    pppoe_nb=0
+    while IFS= read -r line; do
+        declare -a pppoe_label
+        pppoe_label[$pppoe_nb]=$(str_str "$line" " ")
+        if [ ! -z "${pppoe_label[$pppoe_nb]}" ]; then
+            is_pppoe=1
+            pppoe_label[$pppoe_nb]=$(sanityse_output "${pppoe_label[$pppoe_nb]}")
+            if [ "$pppoe_nb" -eq 0 ] || [ "${pppoe_label[$pppoe_nb]}" != "${pppoe_label[$pppoe_nb-1]}" ]; then
+                echo "<separator label=\"${pppoe_label[pppoe_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((pppoe_nb++))
+        fi
+        unset pppoe_model
+        pppoe_model=$(str_str "$line" "Model:")
+        if [ ! -z "$pppoe_model" ]; then
+            is_pppoe=1
+            pppoe_model=$(sanityse_output "$pppoe_model")
+            echo "<item label=\"Modèle : $pppoe_model\" />"
+        fi
+        unset pppoe_driver
+        pppoe_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$pppoe_driver" ]; then
+            pppoe_driver=$(sanityse_output "$pppoe_driver")
+        fi
+        unset pppoe_driver_status_all
+        pppoe_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset pppoe_driver_status pppoe_status
+        if [ ! -z "$pppoe_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
+                    pppoe_status=$(echo "$pppoe_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
+                    pppoe_status=$(echo "$pppoe_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
+                    pppoe_status=$(echo "$pppoe_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
+                    pppoe_status=$(echo "$pppoe_status,$driver_new inactifs")
+                fi
+                pppoe_driver_status=$(echo "$pppoe_driver_status" | sed -e 's/^[,]*//')
+                pppoe_status=$(echo "$pppoe_status" | sed -e 's/^[,]*//')
+            done <<< "$pppoe_driver_status_all"
+        fi
+        unset pppoe_driver_modules
+        pppoe_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$pppoe_driver_modules" ]; then
+            pppoe_driver_modules=$(sanityse_output "$pppoe_driver_modules")
+        fi
+        if [ -z "$pppoe_driver" ] && [ ! -z "$pppoe_driver_status" ]; then
+            is_pppoe=1
+            echo "<item label=\"Driver(s) : $pppoe_driver_status\" />"
+        elif [ ! -z "$pppoe_driver" ] && [ -z "$pppoe_driver_status" ]; then
+            is_pppoe=1
+            echo "<item label=\"Driver(s) : $pppoe_driver\" />"
+        elif [ ! -z "$pppoe_driver" ] && [ ! -z "$pppoe_driver_status" ] && [ "$pppoe_driver" == "$pppoe_driver_status" ]; then
+            is_pppoe=1
+            echo "<item label=\"Driver(s) : $pppoe_driver\" />"
+        elif [ ! -z "$pppoe_driver" ] && [ ! -z "$pppoe_driver_status" ] && [ "$pppoe_driver" != "$pppoe_driver_status" ]; then
+            is_pppoe=1
+            pppoe_driver=$(echo "$pppoe_driver ($pppoe_driver_status)")
+            echo "<item label=\"Driver(s) : $pppoe_driver\" />"
+        fi
+        if [ ! -z "$pppoe_driver_modules" ]; then
+            is_pppoe=1
+            echo "<item label=\"Module(s) : $pppoe_driver_modules\" />"
+        fi
+        if [ ! -z "$pppoe_status" ]; then
+            is_pppoe=1
+            echo "<item label=\"État : $pppoe_status\" />"
+        fi
+    done <<< "$pppoes"
+    if [ ! -z "$is_pppoe" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --pppoe")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --pppoe")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_pppoe" ]; then
+    echo "<item label=\"Aucun périphérique PPPoE détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

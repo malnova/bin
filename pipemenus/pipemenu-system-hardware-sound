@@ -1,0 +1,127 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_sound
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset sounds
+    sounds="$(${default_path}hwinfo --sound | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    sound_nb=0
+    while IFS= read -r line; do
+        declare -a sound_connector
+        sound_connector[$sound_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
+        if [ ! -z "${sound_connector[$sound_nb]}" ]; then
+            is_sound=1
+            sound_connector[$sound_nb]=$(sanityse_output "${sound_connector[$sound_nb]}")
+            if [ "$sound_nb" -eq 0 ] || [ "${sound_connector[$sound_nb]}" != "${sound_connector[$sound_nb-1]}" ]; then
+                echo "<separator label=\"Port ${sound_connector[sound_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((sound_nb++))
+        fi
+        unset sound_model
+        sound_model=$(str_str "$line" "Model:")
+        if [ ! -z "$sound_model" ]; then
+            is_sound=1
+            sound_model=$(sanityse_output "$sound_model")
+            echo "<item label=\"Modèle : $sound_model\" />"
+            ((z++))
+        fi
+        unset sound_vendor
+        sound_vendor=$(str_str "$line" "Vendor:")
+        if [ ! -z "$sound_vendor" ]; then
+            is_sound=1
+            sound_vendor=$(sanityse_output_with_quotes "$sound_vendor")
+            echo "<item label=\"Fabricant : $sound_vendor\" />"
+            ((z++))
+        fi
+        unset sound_driver
+        sound_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$sound_driver" ]; then
+            sound_driver=$(sanityse_output "$sound_driver")
+        fi
+        unset sound_driver_status_all
+        sound_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset sound_driver_status sound_status
+        if [ ! -z "$sound_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    sound_driver_status=$(echo "$sound_driver_status,$driver_new")
+                    sound_status=$(echo "$sound_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    sound_driver_status=$(echo "$sound_driver_status,$driver_new")
+                    sound_status=$(echo "$sound_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    sound_driver_status=$(echo "$sound_driver_status,$driver_new")
+                    sound_status=$(echo "$sound_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    sound_driver_status=$(echo "$sound_driver_status,$driver_new")
+                    sound_status=$(echo "$sound_status,$driver_new inactifs")
+                fi
+                sound_driver_status=$(echo "$sound_driver_status" | sed -e 's/^[,]*//')
+                sound_status=$(echo "$sound_status" | sed -e 's/^[,]*//')
+            done <<< "$sound_driver_status_all"
+        fi
+        unset sound_driver_modules
+        sound_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$sound_driver_modules" ]; then
+            sound_driver_modules=$(sanityse_output "$sound_driver_modules")
+        fi
+        if [ -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ]; then
+            is_sound=1
+            echo "<item label=\"Driver(s) : $sound_driver_status\" />"
+            ((z++))
+        elif [ ! -z "$sound_driver" ] && [ -z "$sound_driver_status" ]; then
+            is_sound=1
+            echo "<item label=\"Driver(s) : $sound_driver\" />"
+            ((z++))
+        elif [ ! -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ] && [ "$sound_driver" == "$sound_driver_status" ]; then
+            is_sound=1
+            echo "<item label=\"Driver(s) : $sound_driver\" />"
+            ((z++))
+        elif [ ! -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ] && [ "$sound_driver" != "$sound_driver_status" ]; then
+            is_sound=1
+            sound_driver=$(echo "$sound_driver ($sound_driver_status)")
+            echo "<item label=\"Driver(s) : $sound_driver\" />"
+            ((z++))
+        fi
+        if [ ! -z "$sound_driver_modules" ]; then
+            is_sound=1
+            echo "<item label=\"Module(s) : $sound_driver_modules\" />"
+            ((z++))
+        fi
+        if [ ! -z "$sound_status" ]; then
+            is_sound=1
+            echo "<item label=\"État : $sound_status\" />"
+            ((z++))
+        fi
+    done <<< "$sounds"
+    if [ ! -z "$is_sound" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --sound")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --sound")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_sound" ]; then
+    echo "<item label=\"Aucun périphérique son détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

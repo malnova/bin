@@ -1,0 +1,112 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_pci
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset pcis
+    pcis="$(${default_path}hwinfo --pci | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sed 's/^[^:]*: //g' | sort)"
+    pci_nb=0
+    while IFS= read -r line; do
+        declare -a pci_label
+        pci_label[$pci_nb]=$(str_str "$line" " ")
+        if [ ! -z "${pci_label[$pci_nb]}" ]; then
+            is_pci=1
+            pci_label[$pci_nb]=$(sanityse_output "${pci_label[$pci_nb]}")
+            if [ "$pci_nb" -eq 0 ] || [ "${pci_label[$pci_nb]}" != "${pci_label[$pci_nb-1]}" ]; then
+                echo "<separator label=\"${pci_label[pci_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((pci_nb++))
+        fi
+        unset pci_model
+        pci_model=$(str_str "$line" "Model:")
+        if [ ! -z "$pci_model" ]; then
+            is_pci=1
+            pci_model=$(sanityse_output "$pci_model")
+            echo "<item label=\"Modèle : $pci_model\" />"
+        fi
+        unset pci_driver
+        pci_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$pci_driver" ]; then
+            pci_driver=$(sanityse_output "$pci_driver")
+        fi
+        unset pci_driver_status_all
+        pci_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset pci_driver_status pci_status
+        if [ ! -z "$pci_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pci_driver_status=$(echo "$pci_driver_status,$driver_new")
+                    pci_status=$(echo "$pci_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pci_driver_status=$(echo "$pci_driver_status,$driver_new")
+                    pci_status=$(echo "$pci_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pci_driver_status=$(echo "$pci_driver_status,$driver_new")
+                    pci_status=$(echo "$pci_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    pci_driver_status=$(echo "$pci_driver_status,$driver_new")
+                    pci_status=$(echo "$pci_status,$driver_new inactifs")
+                fi
+                pci_driver_status=$(echo "$pci_driver_status" | sed -e 's/^[,]*//')
+                pci_status=$(echo "$pci_status" | sed -e 's/^[,]*//')
+            done <<< "$pci_driver_status_all"
+        fi
+        unset pci_driver_modules
+        pci_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$pci_driver_modules" ]; then
+            pci_driver_modules=$(sanityse_output "$pci_driver_modules")
+        fi
+        if [ -z "$pci_driver" ] && [ ! -z "$pci_driver_status" ]; then
+            is_pci=1
+            echo "<item label=\"Driver(s) : $pci_driver_status\" />"
+        elif [ ! -z "$pci_driver" ] && [ -z "$pci_driver_status" ]; then
+            is_pci=1
+            echo "<item label=\"Driver(s) : $pci_driver\" />"
+        elif [ ! -z "$pci_driver" ] && [ ! -z "$pci_driver_status" ] && [ "$pci_driver" == "$pci_driver_status" ]; then
+            is_pci=1
+            echo "<item label=\"Driver(s) : $pci_driver\" />"
+        elif [ ! -z "$pci_driver" ] && [ ! -z "$pci_driver_status" ] && [ "$pci_driver" != "$pci_driver_status" ]; then
+            is_pci=1
+            pci_driver=$(echo "$pci_driver ($pci_driver_status)")
+            echo "<item label=\"Driver(s) : $pci_driver\" />"
+        fi
+        if [ ! -z "$pci_driver_modules" ]; then
+            is_pci=1
+            echo "<item label=\"Module(s) : $pci_driver_modules\" />"
+        fi
+        if [ ! -z "$pci_status" ]; then
+            is_pci=1
+            echo "<item label=\"État : $pci_status\" />"
+        fi
+    done <<< "$pcis"
+    if [ ! -z "$is_pci" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --pci")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --pci")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_pci" ]; then
+    echo "<item label=\"Aucun périphérique PCI détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

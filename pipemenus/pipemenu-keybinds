@@ -1,0 +1,51 @@
+#!/bin/bash
+. default-commands
+
+binds_file="$HOME/.config/binds.list"
+
+echo "<openbox_pipe_menu>"
+
+unset is_keybinds
+if [ -e "$binds_file" ]; then
+    z=0
+    while IFS= read -r line; do
+        if [ ! -z "$line" ]; then
+            if [[ "$line" =~ "separator:" ]]; then
+                if [ ! -z "$is_keybinds" ]; then
+                    echo "</menu>"
+                fi
+                ((z++))
+                menu=$(echo "$line" | grep -ioP '^separator:\K.*')
+                echo "<menu id=\"pipemenu-keybinds-$z\" label=\"$menu\">"
+            elif [[ "$line" =~ "separator=" ]]; then
+                sep=$(echo "$line" | grep -ioP '^separator=\K.*')
+                echo "<separator label=\"$sep\" />"
+            elif [ "$line" = "separator" ]; then
+                echo "<separator />"
+            else
+                if [[ "$line" =~ "exec_command:" ]]; then
+                    label=$(echo "$line" | rev | grep -ioP ':dnammoc_cexe \K.*' | rev)
+                    command=$(echo "$line" | grep -ioP 'exec_command:\K.*')
+                    echo "<item label=\"$label\"><action name=\"Execute\"><command>$command</command></action></item>"
+                else
+                    echo "<item label=\"$line\" />"
+                fi
+            fi
+            is_keybinds=1
+        fi
+    done <"$binds_file"
+fi
+
+if [ -z "$is_keybinds" ]; then
+    echo "<item label=\"Aucun raccourci détecté.\" />"
+else
+    echo "</menu>"
+fi
+
+echo "<separator />"
+echo "<item label=\"Éditer la liste des raccourcis clavier\">"
+echo "<action name=\"Execute\"><command>$(edit_file $binds_file)</command></action>"
+echo "</item>"
+
+echo "</openbox_pipe_menu>"
+exit 0

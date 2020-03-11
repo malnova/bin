@@ -1,0 +1,14 @@
+[Unit]
+Description=Startup commands
+ConditionFileIsExecutable=/usr/local/bin/startup-commands
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/startup-commands
+TimeoutSec=0
+StandardOutput=tty
+RemainAfterExit=no
+SysVStartPriority=99
+
+[Install]
+WantedBy=multi-user.target

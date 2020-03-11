@@ -1,0 +1,82 @@
+#!/bin/bash
+
+unset folders_local folders_length folder folders folder_to_umount
+
+# Emplacements des dossiers locaux à démonter
+declare -a folders_local=("/mnt/NAS/Documents" "/mnt/NAS/Images" "/mnt/NAS/Musique" "/mnt/NAS/Videos" "/mnt/ORDIBUREAU")
+folders_length=${#folders_local[@]}
+
+syntax="nas-umount [1 ou 1,2...]\n  Dossiers :\n    t ou T : tous les dossiers"
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo -e "$syntax"
+    for (( i=1; i<${folders_length}+1; i++ )); do
+        echo "    $i : ${folders_local[$i-1]}"
+    done
+    exit
+fi
+
+if [ ! -z "$1" ]; then
+    folder="$1"
+else
+    echo -e "Dossiers (* indique un dossier monté) :\n    t ou T : tous les dossiers"
+    for (( i=1; i<${folders_length}+1; i++ )); do
+        if mount | grep "${folders_local[$i-1]}" >/dev/null; then
+            is_mounted=" *"
+        else
+            is_mounted=""
+        fi
+        echo "    $i : ${folders_local[$i-1]}${is_mounted}"
+    done
+    echo "    Entrée : quitter sans effectuer de démontage"
+    read -p "Dossier(s) à démonter (ex. 1 ou 1,2...) : " folder
+fi
+
+if [ -z "$folder" ]; then
+    exit
+fi
+
+if [ "$folder" == "t" ] || [ "$folder" == "T" ]; then
+    for (( i=1; i<${folders_length}+1; i++ )); do
+        if [ "$i" -gt "1" ]; then
+            folders="${folders},"
+        fi
+        folders="${folders}${i}"
+    done
+    folder="${folders}"
+fi
+
+if [[ "$folder" =~ "," ]]; then
+    IFS=',' read -r -a folders <<< "$folder"
+elif [ ! -z "$folder" ]; then
+    folders=("${folder}")
+else
+    echo "Erreur : aucun dossier à démonter."
+    exit
+fi
+
+for i in "${folders[@]}"; do
+    folder_to_umount="$i"
+    if [[ $i =~ ^[0-9]+$ ]] && [ "$i" -ge "1" ] && [ "$i" -le "$folders_length" ]; then
+        folder_to_umount="${folders_local[$i-1]}"
+    else
+        echo "Erreur : $i n'est pas un choix de dossier valide."
+        continue
+    fi
+    if [ ! -d "${folder_to_umount}" ]; then
+        echo "Erreur : ${folder_to_umount} n'existe pas."
+        continue
+    fi
+    if mount | grep "${folder_to_umount}" >/dev/null; then
+        $(sudo umount "${folder_to_umount}")
+        if [ $? -eq 0 ]; then
+            echo "Dossier ${folder_to_umount} démonté."
+        else
+            echo "Erreur : le dossier ${folder_to_umount} n'a pas pu être démonté."
+        fi
+    else
+        echo "Erreur : le dossier ${folder_to_umount} n'est pas un point de montage ou est déjà démonté."
+    fi
+done
+
+exit 0

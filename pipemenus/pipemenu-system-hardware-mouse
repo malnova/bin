@@ -1,0 +1,141 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_mouse
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset mouses
+    mouses="$(${default_path}hwinfo --mouse | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    mouse_nb=0
+    while IFS= read -r line; do
+        declare -a mouse_connector
+        mouse_connector[$mouse_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
+        if [ ! -z "${mouse_connector[$mouse_nb]}" ]; then
+            is_mouse=1
+            mouse_connector[$mouse_nb]=$(sanityse_output "${mouse_connector[$mouse_nb]}")
+            if [ "$mouse_nb" -eq 0 ] || [ "${mouse_connector[$mouse_nb]}" != "${mouse_connector[$mouse_nb-1]}" ]; then
+                echo "<separator label=\"Port ${mouse_connector[mouse_nb]}\" />"
+            elif [ "$z" -gt 0 ]; then
+                z=0
+                echo "<separator />"
+            fi
+            ((z++))
+            ((mouse_nb++))
+        fi
+        unset mouse_model
+        mouse_model=$(str_str "$line" "Model:")
+        if [ ! -z "$mouse_model" ]; then
+            is_mouse=1
+            mouse_model=$(sanityse_output "$mouse_model")
+            echo "<item label=\"Modèle : $mouse_model\" />"
+            ((z++))
+        fi
+        unset mouse_vendor
+        mouse_vendor=$(str_str "$line" "Vendor:")
+        if [ ! -z "$mouse_vendor" ]; then
+            is_mouse=1
+            mouse_vendor=$(sanityse_output_with_quotes "$mouse_vendor")
+            echo "<item label=\"Fabricant : $mouse_vendor\" />"
+            ((z++))
+        fi
+        unset mouse_device_file
+        mouse_device_file=$(str_str "$line" "Device Files:" | grep -ioP '/dev/input/event[0-9]+' | head -n1)
+        if [ ! -z "$mouse_device_file" ]; then
+            is_mouse=1
+            unset mouse_matchvendor
+            mouse_matchvendor=$(udevadm info --query=property --name=$mouse_device_file | grep -ioP 'ID_VENDOR=\K.*')
+            if [ ! -z "$mouse_matchvendor" ]; then
+                mouse_matchvendor=$(sanityse_output "$mouse_matchvendor")
+                echo "<item label=\"Fournisseur (MatchVendor) : $mouse_matchvendor\" />"
+            fi
+            mouse_device_file=$(sanityse_output "$mouse_device_file")
+            echo "<item label=\"Fichier : $mouse_device_file\" />"
+            ((z++))
+        fi
+        unset mouse_driver
+        mouse_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
+        if [ ! -z "$mouse_driver" ]; then
+            mouse_driver=$(sanityse_output "$mouse_driver")
+        fi
+        unset mouse_driver_status_all
+        mouse_driver_status_all=$(str_str "$line" "Driver Status:")
+        unset mouse_driver_status mouse_status
+        if [ ! -z "$mouse_driver_status_all" ]; then
+            unset status
+            while read status; do
+                unset driver_new
+                if [[ "$status" =~ "is active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    mouse_driver_status=$(echo "$mouse_driver_status,$driver_new")
+                    mouse_status=$(echo "$mouse_status,$driver_new actif")
+                elif [[ "$status" =~ "are active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    mouse_driver_status=$(echo "$mouse_driver_status,$driver_new")
+                    mouse_status=$(echo "$mouse_status,$driver_new actifs")
+                elif [[ "$status" =~ "is not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/is not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    mouse_driver_status=$(echo "$mouse_driver_status,$driver_new")
+                    mouse_status=$(echo "$mouse_status,$driver_new inactif")
+                elif [[ "$status" =~ "are not active" ]]; then
+                    driver_new=$(echo "$status" | sed 's/are not active//g')
+                    driver_new=$(sanityse_output "$driver_new")
+                    mouse_driver_status=$(echo "$mouse_driver_status,$driver_new")
+                    mouse_status=$(echo "$mouse_status,$driver_new inactifs")
+                fi
+                mouse_driver_status=$(echo "$mouse_driver_status" | sed -e 's/^[,]*//')
+                mouse_status=$(echo "$mouse_status" | sed -e 's/^[,]*//')
+            done <<< "$mouse_driver_status_all"
+        fi
+        unset mouse_driver_modules
+        mouse_driver_modules=$(str_str "$line" "Driver Modules:")
+        if [ ! -z "$mouse_driver_modules" ]; then
+            mouse_driver_modules=$(sanityse_output "$mouse_driver_modules")
+        fi
+        if [ -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ]; then
+            is_mouse=1
+            echo "<item label=\"Driver(s) : $mouse_driver_status\" />"
+            ((z++))
+        elif [ ! -z "$mouse_driver" ] && [ -z "$mouse_driver_status" ]; then
+            is_mouse=1
+            echo "<item label=\"Driver(s) : $mouse_driver\" />"
+            ((z++))
+        elif [ ! -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ] && [ "$mouse_driver" == "$mouse_driver_status" ]; then
+            is_mouse=1
+            echo "<item label=\"Driver(s) : $mouse_driver\" />"
+            ((z++))
+        elif [ ! -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ] && [ "$mouse_driver" != "$mouse_driver_status" ]; then
+            is_mouse=1
+            mouse_driver=$(echo "$mouse_driver ($mouse_driver_status)")
+            echo "<item label=\"Driver(s) : $mouse_driver\" />"
+            ((z++))
+        fi
+        if [ ! -z "$mouse_driver_modules" ]; then
+            is_mouse=1
+            echo "<item label=\"Module(s) : $mouse_driver_modules\" />"
+            ((z++))
+        fi
+        if [ ! -z "$mouse_status" ]; then
+            is_mouse=1
+            echo "<item label=\"État : $mouse_status\" />"
+            ((z++))
+        fi
+    done <<< "$mouses"
+    if [ ! -z "$is_mouse" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher un aperçu rapide\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --short --mouse")</command></action></item>"
+        echo "<item label=\"Afficher les informations complètes\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --mouse")</command></action></item>"
+    fi
+fi
+
+if [ -z "$is_mouse" ]; then
+    echo "<item label=\"Aucune souris détectée.\" />"
+fi
+
+echo "</openbox_pipe_menu>"
+exit 0

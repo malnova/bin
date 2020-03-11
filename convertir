@@ -1,0 +1,354 @@
+#!/bin/bash
+
+syntax="convertir [--format=] fichier_entrée [-o fichier_sortie]"
+input_format="mediawiki"
+odt_reference_file="/usr/local/bin/reference.odt"
+convert_options="-s"
+tmp_file="/tmp/tmp_convert_file.md"
+tmp_output_file="/tmp/tmp_odt_file.odt"
+unset input_file output_file output_file_orig output_format pdf_file
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo "$syntax"
+    echo "--format : format du fichier de sortie"
+    exit
+fi
+
+if [[ "$1" =~ "-o" ]]; then
+    output_file="$2"
+    if [[ "$3" =~ "--format=" ]]; then
+        output_format="$3"
+        if [ -z "$4" ]; then
+            echo "Aucun fichier d'entrée spécifié !"
+            echo "Rappel : $syntax"
+            exit
+        else
+            input_file="$4"
+        fi
+    else
+        input_file="$3"
+        if [ ! -z "$4" ]; then
+            if [[ "$4" =~ "--format=" ]]; then
+                output_format="$4"
+            else
+                echo "Option non reconnue : $4"
+                echo "Rappel : $syntax"
+                exit
+            fi
+        fi
+    fi
+elif [[ "$2" =~ "-o" ]]; then
+    output_file="$3"
+    if [[ "$1" =~ "--format=" ]]; then
+        output_format="$1"
+        if [ -z "$4" ]; then
+            echo "Aucun fichier d'entrée spécifié !"
+            echo "Rappel : $syntax"
+            exit
+        else
+            input_file="$4"
+        fi
+    else
+        input_file="$1"
+        if [ ! -z "$4" ]; then
+            if [[ "$4" =~ "--format=" ]]; then
+                output_format="$4"
+            else
+                echo "Option non reconnue : $4"
+                echo "Rappel : $syntax"
+                exit
+            fi
+        fi
+    fi
+elif [[ "$3" =~ "-o" ]]; then
+    output_file="$4"
+    if [[ "$1" =~ "--format=" ]]; then
+        output_format="$1"
+        input_file="$2"
+    else
+        input_file="$1"
+        if [[ "$2" =~ "--format=" ]]; then
+            output_format="$2"
+        else
+            echo "Option non reconnue : $2"
+            echo "Rappel : $syntax"
+            exit
+        fi
+    fi
+else
+    input_file="$1"
+    if [ ! -z "$2" ]; then
+        if [[ "$2" =~ "--format=" ]]; then
+            output_format="$2"
+        else
+            echo "Option non reconnue : $2"
+            echo "Rappel : $syntax"
+            exit
+        fi
+    fi
+fi
+
+if [ ! -z "$output_format" ]; then
+    output_format=$(echo "$output_format" | grep -ioP 'format=\K.*')
+fi
+
+if [ -z "$output_file" ]; then
+    if [ -z "$output_format" ]; then
+        echo "Impossible de déterminer le format de sortie."
+        echo "Rappel : $syntax"
+        exit
+    else
+        if [[ "$input_file" =~ "." ]]; then
+            output_file=$(echo "$input_file" | rev | cut -d '.' -f2 | rev)
+            output_file="$output_file.$output_format"
+        else
+            output_file="$input_file.$output_format"
+        fi
+    fi
+fi
+
+tmp_output_format=$(echo "$output_file" | rev | cut -d '.' -f1 | rev)
+if [ ! -z "$output_format" ]; then
+    if [ "$tmp_output_format" != "$output_format" ]; then
+        echo "Attention ! Conflit possible entre le format du fichier de sortie et le format spécifié."
+    fi
+    tmp_output_format="$output_format"
+else
+    if [[ ! "$output_file" =~ "." ]]; then
+        echo "Impossible de déterminer le format de sortie."
+        echo "Rappel : $syntax"
+        exit
+    fi
+fi
+
+if [ ! -e "$input_file" ]; then
+    echo "Le fichier d'entrée $input_file n'existe pas."
+    exit
+fi
+
+if [ "$input_file" = "$output_file" ]; then
+    echo "Les fichiers d'entrée et de sortie sont identiques."
+    exit
+fi
+
+if [[ "$input_file" =~ "." ]]; then
+    input_format=$(echo "$input_file" | rev | cut -d '.' -f1 | rev)
+    if [ "$input_format" = "md" ]; then
+        input_format="markdown"
+    elif [ "$input_format" = "wiki" ]; then
+        input_format="mediawiki"
+    fi
+fi
+
+if [ "$input_format" = "$tmp_output_format" ]; then
+    echo "Les formats d'entrée et de sortie sont identiques."
+    exit
+fi
+
+echo "Fichier d'entrée : $input_file"
+echo "Format d'entrée : $input_format"
+echo "Fichier de sortie : $output_file"
+echo "Format de sortie : $tmp_output_format"
+while true; do
+    read -n 1 -p "Est-ce correct (O/n) ? " yn
+    case $yn in
+        "" ) break;;
+        [Oo] ) echo && break;;
+        [Nn] ) echo && exit;;
+        * ) echo " Veuillez répondre par O ou n."
+    esac
+done
+
+if ([ "$input_format" = "bmp" ] || [ "$input_format" = "gif" ] || [ "$input_format" = "jpg" ] || [ "$input_format" = "png" ]) && [ "$tmp_output_format" = "txt" ]; then
+    $( img2txt "$input_file" > "$output_file" )
+    exit
+fi
+
+if [ "$tmp_output_format" = "bmp" ]; then
+    $( convert -background white -alpha remove -alpha off "$input_file" BMP3:"$output_file" )
+    exit
+fi
+
+if [ "$tmp_output_format" = "ico" ]; then
+    $( convert -background transparent -resize x64 -gravity center -crop 64x64+0+0 "$input_file" -transparent white -colors 256 "$output_file" )
+    exit
+fi
+
+if [ "$tmp_output_format" = "png" ]; then
+    $( convert "$input_file" "$output_file" )
+    exit
+fi
+
+if [ "$tmp_output_format" = "gif" ] || [ "$tmp_output_format" = "jpg" ] || [ "$tmp_output_format" = "jpeg" ] || [ "$tmp_output_format" = "pdf" ] || [ "$tmp_output_format" = "svg" ] || [ "$tmp_output_format" = "tif" ] || [ "$tmp_output_format" = "tiff" ]; then
+    if [ "$input_format" = "bmp" ] || [ "$input_format" = "gif" ] || [ "$input_format" = "ico" ] || [ "$input_format" = "jpg" ] || [ "$input_format" = "jpeg" ] || [ "$input_format" = "pdf" ] || [ "$input_format" = "png" ] || [ "$input_format" = "svg" ] || [ "$input_format" = "tif" ] || [ "$input_format" = "tiff" ]; then
+        $( convert -background white -alpha remove -alpha off -quality 85 -density 250 "$input_file" "$output_file" )
+        exit
+    else
+        output_file_orig="$output_file"
+        output_file=$(echo "$input_file" | rev | cut -d '.' -f2 | rev)
+        output_file="$output_file.pdf"
+        output_format="$tmp_output_format"
+        tmp_output_format="pdf"
+    fi
+fi
+
+if [ "$input_format" = "pdf" ]; then
+    if [ "$tmp_output_format" = "txt" ]; then
+        $( pdftotext -nopgbrk "$input_file" "$output_file" )
+        exit
+    elif ([ "$tmp_output_format" = "htm" ] || [ "$tmp_output_format" = "html" ]); then
+        $( pdftohtml -c -i -p -s "$input_file" "$output_file" )
+        exit
+    elif ([ "$tmp_output_format" = "doc" ] || [ "$tmp_output_format" = "docx" ] || [ "$tmp_output_format" = "odt" ]); then
+        tmp_output_file=$(echo "$input_file" | rev | cut -d '.' -f2 | rev)
+        tmp_output_file="$tmp_output_file.html"
+        echo "Création du fichier $tmp_output_file"
+        $( pdftohtml -c -i -p -q -s "$input_file" "$tmp_output_file" )
+        echo "Création du fichier $output_file"
+        $( pandoc -s -t "$tmp_output_format" -o "$output_file" -f html "$tmp_output_file" )
+        echo "Suppression du fichier $tmp_output_file"
+        rm "$tmp_output_file"
+        exit
+    fi
+fi
+
+# Création d'un fichier temporaire
+echo "Création du fichier temporaire $tmp_file."
+cp "$input_file" "$tmp_file"
+
+if [ "$input_format" = "markdown" ] || [ "$input_format" = "mediawiki" ]; then
+    # Modifications typographiques
+    echo "Application des modifications typographiques."
+    # Remplacement des guillemets
+    perl -C -i -pe 's/"(\p{L}+)/\&laquo;\&nbsp;$1/g' "$tmp_file"
+    perl -C -i -pe 's/([\p{L}!)?.\205]+)"/$1\&nbsp;&raquo;/g' "$tmp_file"
+    # Rétablir des guillemets droits entre guillemets
+    perl -C -i -pe  's/(\&laquo;\&nbsp;\p{L}+ +[\p{L},() \-\047]*)(\&laquo;\&nbsp;)(\p{L}+)/$1"$3/g' "$tmp_file"
+    perl -C -i -pe  's/(\p{L}+)(\&nbsp;\&raquo;)([\p{L},() \-\047]* +\p{L}+\&nbsp;\&raquo;)/$1"$3/g' "$tmp_file"
+    # Conserver des guillemets droits en cas d'échappement avec \
+    perl -C -i -pe 's/\\\&laquo;\&nbsp;/"/g' "$tmp_file"
+    perl -C -i -pe 's/\\"/"/g' "$tmp_file"
+    # Remplacement des tirets par des cadratins
+    sed -i -e 's/ - / \&#8211; /g' "$tmp_file"
+    sed -i -e 's/^\- /\&#8212; /g' "$tmp_file"
+    # Espace insécable devant les signes de ponctuation double, le % et le €
+    sed -i -e 's/ !/\&nbsp;!/g' -e 's/ ?/\&nbsp;?/g' -e 's/ :/\&nbsp;:/g' -e 's/ ;/\&nbsp;;/g' -e 's/ %/\&nbsp;%/g' -e 's/ €/\&nbsp;€/g' "$tmp_file"
+    # Remplacement des points de suspension
+    sed -i -r 's/\.\.\./\&#8230;/g' "$tmp_file"
+    # Remplacement de l'apostrophe
+    perl -i -pe "s/(?<!')'(?!')/\&#8217;/g" "$tmp_file"
+
+    # Exposant et espace insécable pour les siècles
+    if [ "$input_format" = "mediawiki" ]; then
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b (s\.)/$1<sup>e<\/sup>\&nbsp;s./g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b (siècle)/$1<sup>e<\/sup>\&nbsp;siècle/g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b/$1<sup>e<\/sup>/g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))es\b/$1<sup>es<\/sup>/g' "$tmp_file"
+    else
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b (s\.)/$1\^e\^\&nbsp;s./g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b (siècle)/$1\^e\^\&nbsp;siècle/g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))e\b/$1\^e\^/g' "$tmp_file"
+        perl -i -pe 's/\b(X{1,3}(IX|IV|V?I{0,3})|X{0,3}(IX|I?V|V?I{1,3}))es\b/$1\^es\^/g' "$tmp_file"
+    fi
+
+    # Exposant pour les abréviations de numéraux
+    perl -i -pe 's/\b(1er)\b/1<sup>er<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(Ier)\b/I<sup>er<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(1ers)\b/1<sup>ers<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(1re)\b/1<sup>re<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(Ire)\b/I<sup>re<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(1res)\b/1<sup>res<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(2d)\b/2<sup>d<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(IId)\b/II<sup>d<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(2ds)\b/2<sup>ds<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(2de)\b/2<sup>de<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(IIde)\b/II<sup>de<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(2des)\b/2<sup>des<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(\d+)e\b/$1<sup>e<\/sup>/g' "$tmp_file"
+    perl -i -pe 's/\b(\d+)es\b/$1<sup>es<\/sup>/g' "$tmp_file"
+    # Remplacement de symboles
+    perl -i -pe 's/(^| |\&nbsp;)\(c\)( |\&nbsp;)/$1\&copy;$2/sgm' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)\(r\)( |\&nbsp;)/$1\&reg;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)\(tm\)( |\&nbsp;)/$1\&trade;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)\+\/\-( |\&nbsp;)/$1\&plusmn;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)1\/4( |\&nbsp;)/$1\&frac14;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)1\/2( |\&nbsp;)/$1\&frac12;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)3\/4( |\&nbsp;)/$1\&frac34;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)<=( |\&nbsp;)/$1\&le;$2/g' "$tmp_file"
+    perl -i -pe 's/(^| |\&nbsp;)>=( |\&nbsp;)/$1\&ge;$2/g' "$tmp_file"
+    # Rétablissement des caractères originaux les textes préformatés
+    perl -0pi -e 's/\&laquo;(?=(?:(?!<pre>).)*<\/pre\>)/"/sgm' "$tmp_file"
+    perl -0pi -e 's/\&raquo;(?=(?:(?!<pre>).)*<\/pre\>)/"/sgm' "$tmp_file"
+    perl -0pi -e 's/\&nbsp;(?=(?:(?!<pre>).)*<\/pre\>)/ /sgm' "$tmp_file"
+    perl -0pi -e 's/\&#8211;(?=(?:(?!<pre>).)*<\/pre\>)/-/sgm' "$tmp_file"
+    perl -0pi -e 's/\&#8212;(?=(?:(?!<pre>).)*<\/pre\>)/-/sgm' "$tmp_file"
+    perl -0pi -e 's/\&#8230;(?=(?:(?!<pre>).)*<\/pre\>)/.../sgm' "$tmp_file"
+    perl -0pi -e "s/\&#8217;(?=(?:(?!<pre>).)*<\/pre\>)/'/sgm" "$tmp_file"
+    perl -0pi -e 's/<sup\>(?=(?:(?!<pre>).)*<\/pre\>)//sgm' "$tmp_file"
+    perl -0pi -e 's/<\/sup\>(?=(?:(?!<pre>).)*<\/pre\>)//sgm' "$tmp_file"
+    perl -0pi -e 's/<sub\>(?=(?:(?!<pre>).)*<\/pre\>)//sgm' "$tmp_file"
+    perl -0pi -e 's/<\/sub\>(?=(?:(?!<pre>).)*<\/pre\>)//sgm' "$tmp_file"
+    perl -0pi -e 's/\&copy;(?=(?:(?!<pre>).)*<\/pre\>)/(c)/sgm' "$tmp_file"
+    perl -0pi -e 's/\&reg;(?=(?:(?!<pre>).)*<\/pre\>)/(r)/sgm' "$tmp_file"
+    perl -0pi -e 's/\&trade;(?=(?:(?!<pre>).)*<\/pre\>)/(tm)/sgm' "$tmp_file"
+    perl -0pi -e 's/\&plusmn;(?=(?:(?!<pre>).)*<\/pre\>)/+\/-/sgm' "$tmp_file"
+    perl -0pi -e 's/\&frac14;(?=(?:(?!<pre>).)*<\/pre\>)/1\/4/sgm' "$tmp_file"
+    perl -0pi -e 's/\&frac12;(?=(?:(?!<pre>).)*<\/pre\>)/1\/2/sgm' "$tmp_file"
+    perl -0pi -e 's/\&frac34;(?=(?:(?!<pre>).)*<\/pre\>)/3\/4/sgm' "$tmp_file"
+    perl -0pi -e 's/\&le;(?=(?:(?!<pre>).)*<\/pre\>)/<=/sgm' "$tmp_file"
+    perl -0pi -e 's/\&ge;(?=(?:(?!<pre>).)*<\/pre\>)/>=/sgm' "$tmp_file"
+fi
+
+# Conversion du fichier
+if [ "$tmp_output_format" = "pdf" ]; then
+    if [ -e "$odt_reference_file" ]; then
+        echo "Création d'un fichier .odt à partir du fichier de référence $odt_reference_file"
+        pandoc "$convert_options" -t odt -o "$tmp_output_file" --reference-odt="$odt_reference_file" -f "$input_format" "$tmp_file"
+    else
+        echo "Création d'un fichier .odt"
+        $( pandoc "$convert_options" -t odt -o "$tmp_output_file" -f "$input_format" "$tmp_file" )
+    fi
+    if [ -e "/usr/bin/libreoffice" ]; then
+        echo "Création du fichier $output_file"
+        /usr/bin/libreoffice --headless --convert-to pdf "$tmp_output_file"
+        pdf_file=$(echo "$tmp_output_file" | rev | cut -d '.' -f2 | cut -d '/' -f1 | rev)
+        pdf_file="$pdf_file.pdf"
+        if [ "$pdf_file" != "$output_file" ]; then
+            mv "$pdf_file" "$output_file"
+        fi
+    else
+        echo "Impossible de trouver /usr/bin/libreoffice ! Conversion en pdf impossible."
+        exit
+    fi
+    echo "Suppression du fichier .odt"
+    rm "$tmp_output_file"
+elif ([ "$tmp_output_format" = "doc" ] || [ "$tmp_output_format" = "docx" ]) && [ -e "$odt_reference_file" ]; then
+    echo "Création d'un fichier .odt à partir du fichier de référence $odt_reference_file"
+    $( pandoc "$convert_options" -t odt -o "$tmp_output_file" --reference-odt="$odt_reference_file" -f "$input_format" "$tmp_file" )
+    echo "Création du fichier $output_file"
+    $( pandoc "$convert_options" -o "$output_file" "$tmp_output_file" )
+    echo "Suppression du fichier .odt"
+    #rm "$tmp_output_file"
+elif [ "$tmp_output_format" = "odt" ] && [ -e "$odt_reference_file" ]; then
+    echo "Création du fichier $output_file à partir du fichier de référence $odt_reference_file"
+    $( pandoc "$convert_options" -t "$output_format" -o "$output_file" --reference-odt="$odt_reference_file" -f "$input_format" "$tmp_file" )
+else
+    echo "Création du fichier $output_file"
+    if [ -z "$output_format" ]; then
+        $( pandoc "$convert_options" -o "$output_file" -f "$input_format" "$tmp_file" )
+    else
+        $( pandoc "$convert_options" -t "$output_format" -o "$output_file" -f "$input_format" "$tmp_file" )
+    fi
+fi
+if [ "$tmp_output_format" = "pdf" ] && ([ "$output_format" = "bmp" ] || [ "$output_format" = "gif" ] || [ "$output_format" = "ico" ] || [ "$output_format" = "jpg" ] || [ "$output_format" = "jpeg" ] || [ "$output_format" = "png" ] || [ "$output_format" = "svg" ] || [ "$output_format" = "tif" ] || [ "$output_format" = "tiff" ]); then
+    echo "Création du fichier $output_file_orig à partir du fichier $output_file"
+    $( convert -background white -alpha remove -alpha off -quality 85 -density 250 "$output_file" "$output_file_orig" )
+    echo "Suppression du fichier $output_file"
+    rm "$output_file"
+fi
+
+# Suppression du fichier temporaire
+echo "Suppression du fichier temporaire."
+rm "$tmp_file"
+
+exit 0

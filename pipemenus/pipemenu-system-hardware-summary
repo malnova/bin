@@ -1,0 +1,259 @@
+#!/bin/bash
+. default-commands
+. pipemenu-system-functions
+
+summary_file="${HOME}/.cache/pipemenu-system-hardware-summary.txt"
+
+unset summary_str
+
+# Modèle de l'ordinateur
+if [ -e "/sys/devices/virtual/dmi/id/product_name" ]; then
+    unset summary_system_model
+    summary_system_model=$(cat /sys/devices/virtual/dmi/id/product_name)
+    if [ ! -z "${summary_system_model}" ] && [[ ! "${summary_system_model}" =~ "System Product Name" ]]; then
+        summary_system_model=$(sanityse_terminal_output "${summary_system_model}")
+        summary_local_str="Modèle : ${summary_system_model}\n\n"
+    fi
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# Carte mère
+unset summary_local_str
+if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-baseboard" ]; then
+    unset summary_board summary_board_name summary_board_vendor
+    summary_board=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-baseboard)
+    summary_board_name=$(echo "${summary_board}" | grep -ioP '^\s*Product Name:\K.*')
+    if [ ! -z "${summary_board_name}" ]; then
+        summary_board_name=$(sanityse_terminal_output "${summary_board_name}")
+        summary_local_str="${summary_local_str}Modèle : ${summary_board_name}\n"
+    fi
+    summary_board_vendor=$(echo "${summary_board}" | grep -ioP '^\s*Manufacturer:\K.*')
+    if [ ! -z "${summary_board_vendor}" ]; then
+        summary_board_vendor=$(sanityse_terminal_output "${summary_board_vendor}")
+        summary_local_str="${summary_local_str}Fabricant : ${summary_board_vendor}\n"
+    fi
+fi
+if [ -z "${summary_local_str}" ]; then
+    if [ -e "/sys/devices/virtual/dmi/id/board_name" ]; then
+        unset summary_board_name
+        summary_board_name=$(cat /sys/devices/virtual/dmi/id/board_name)
+        if [ ! -z "${summary_board_name}" ]; then
+            summary_board_name=$(sanityse_terminal_output "${summary_board_name}")
+            summary_local_str="${summary_local_str}Modèle : ${summary_board_name}\n"
+        fi
+    fi
+    if [ -e "/sys/devices/virtual/dmi/id/board_vendor" ]; then
+        unset summary_board_vendor
+        summary_board_vendor=$(cat /sys/devices/virtual/dmi/id/board_vendor)
+        if [ ! -z "${summary_board_vendor}" ]; then
+            summary_board_vendor=$(sanityse_terminal_output "${summary_board_vendor}")
+            summary_local_str="${summary_local_str}Fabricant : ${summary_board_vendor}\n"
+        fi
+    fi
+fi
+if [ -z "${summary_local_str}" ]; then
+    summary_local_str="Carte mère non reconnue.\n"
+else
+    summary_local_str="Carte mère\n----------\n${summary_local_str}"
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# BIOS
+unset summary_local_str
+if [ -d "/sys/firmware/efi" ]; then
+    summary_local_str="${summary_local_str}Type : EFI / UEFI\n"
+else
+    summary_local_str="${summary_local_str}Type : BIOS\n"
+fi
+if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-bios" ]; then
+    unset summary_bios summary_bios_vendor
+    summary_bios=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-bios)
+    summary_bios_vendor=$(echo "${summary_bios}" | grep -ioP '^\s*Vendor:\K.*')
+    if [ ! -z "${summary_bios_vendor}" ]; then
+        summary_bios_vendor=$(sanityse_terminal_output "${summary_bios_vendor}")
+        summary_local_str="${summary_local_str}Fabricant : ${summary_bios_vendor}\n"
+    fi
+fi
+summary_local_str="\nBIOS\n----\n${summary_local_str}"
+
+summary_str="${summary_str}${summary_local_str}"
+
+# Processeur(s)
+unset summary_local_str
+if [ -e "${default_path}lscpu" ]; then
+    unset summary_cpu_nb summary_cpu_core_nb summary_cpu_name
+    summary_cpu=$(${default_path}lscpu)
+    summary_cpu_core_nb=$(echo "${summary_cpu}" | awk '/Cœur\(s\) par socket/{print $4}')
+    if [ ! -z "${summary_cpu_core_nb}" ]; then
+        summary_cpu_core_nb=$(sanityse_terminal_output "${summary_cpu_core_nb}")
+        summary_local_str="${summary_local_str}Nombre de cœurs : ${summary_cpu_core_nb}\n"
+    fi
+    summary_cpu_name=$(echo "${summary_cpu}" | awk '/Nom de modèle/{$1=$2=$3=""; print $0}')
+    if [ ! -z "${summary_cpu_name}" ]; then
+        summary_cpu_name=$(sanityse_terminal_output "${summary_cpu_name}")
+        summary_local_str="${summary_local_str}Modèle : ${summary_cpu_name}\n"
+    fi
+fi
+if [ -z "${summary_local_str}" ]; then
+    summary_local_str="\nAucun processeur détecté.\n"
+else
+    summary_local_str="\nProcesseur\n----------\n${summary_local_str}"
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# RAM
+unset summary_local_str
+if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
+    unset summary_ram summary_ram_slot_total summary_ram_slot_used summary_ram_slot_unused
+    summary_ram=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-memory)
+    summary_ram_slot_total=$(echo "${summary_ram}" | grep -ioP '^\s*Number Of Devices:\K.*')
+    summary_ram_slot_used=$(echo "${summary_ram}" | grep -cioP '^\tPart Number: (?!\[Empty\])')
+    summary_ram_slot_unused=$(echo "${summary_ram}" | grep -ci 'No Module Installed')
+    if [ ! -z "${summary_ram_slot_total}" ]; then
+        if [ ! -z "${summary_ram_slot_used}" ] && [ ! -z "${summary_ram_slot_unused}" ]; then
+            summary_ram_slot_used=$(( summary_ram_slot_used - summary_ram_slot_unused ))
+            summary_local_str="${summary_local_str}Emplacements utilisés : ${summary_ram_slot_used} sur ${summary_ram_slot_total}\n"
+        else
+            summary_local_str="${summary_local_str}Emplacements : ${summary_ram_slot_total}\n"
+        fi
+        summary_local_str=$(sanityse_terminal_output "${summary_local_str}")
+    fi
+    unset summary_ram_capacity_used
+    summary_ram_capacity_used=$(echo "${summary_ram}" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
+    if [ ! -z "${summary_ram_capacity_used}" ]; then
+        summary_ram_capacity_used=$(echo "${summary_ram_capacity_used}" | awk '{ SUM += $1} END { print SUM }')
+        summary_local_str="${summary_local_str}Taille totale : ${summary_ram_capacity_used} Mo\n"
+        summary_local_str=$(sanityse_terminal_output "${summary_local_str}")
+    fi
+    x=0
+    while read -d $'\xBF' summary_line; do
+        unset summary_sub_local_str
+        if [[ "${summary_line}" =~ "DMI type 17" ]] && [[ ! "${summary_line}" =~ "No Module Installed" ]]; then
+            unset summary_ram_size
+            summary_ram_size=$(echo "${summary_line}" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
+            if [ ! -z "${summary_ram_size}" ]; then
+                summary_sub_local_str="${summary_sub_local_str}${summary_ram_size} Mo "
+            fi
+            unset summary_ram_type
+            summary_ram_type=$(echo "${summary_line}" | grep -ioP '^\s*Type:\K.*')
+            if [ ! -z "${summary_ram_type}" ]; then
+                summary_sub_local_str="${summary_sub_local_str}${summary_ram_type} "
+            fi
+            unset summary_ram_speed
+            summary_ram_speed=$(echo "${summary_line}" | grep -ioP '^\s*Speed:\K.*')
+            if [ ! -z "${summary_ram_speed}" ]; then
+                summary_sub_local_str="${summary_sub_local_str} ${summary_ram_speed}"
+            fi
+        fi
+        if [ ! -z "${summary_sub_local_str}" ]; then
+            ((x++))
+            summary_sub_local_str="Emplacement ${x} : ${summary_sub_local_str}\n"
+            summary_local_str="${summary_local_str}${summary_sub_local_str}"
+            summary_local_str=$(sanityse_terminal_output "${summary_local_str}")
+        fi
+    done < <(echo "${summary_ram}" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+fi
+if [ -z "${summary_local_str}" ]; then
+    summary_local_str="\nAucune RAM détectée.\n"
+else
+    summary_local_str="\nRAM\n---\n${summary_local_str}"
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# Carte(s) graphique(s)
+unset summary_local_str
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset summary_gfxcards
+    summary_gfxcards="$(${default_path}hwinfo --gfxcard | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    summary_gfxcard_nb=0
+    unset $summary_gfxcard_model $summary_gfxcard_vendor
+    declare -a summary_gfxcard_model summary_gfxcard_vendor
+    unset summary_local_gfxcard_model summary_local_gfxcard_vendor
+    while IFS= read -r summary_line; do
+        summary_local_gfxcard_model=$(str_str "$summary_line" "Model:")
+        if [ ! -z "${summary_local_gfxcard_model}" ]; then
+            summary_gfxcard_model[${summary_gfxcard_nb}]=$(sanityse_terminal_output "$summary_local_gfxcard_model")
+            summary_local_gfxcard_vendor=$(str_str "$summary_line" "Vendor:")
+            if [ ! -z "${summary_local_gfxcard_vendor}" ]; then
+                summary_gfxcard_vendor[${summary_gfxcard_nb}]=$(sanityse_terminal_output "$summary_local_gfxcard_vendor")
+            fi
+            ((summary_gfxcard_nb++))
+        fi
+    done <<< "${summary_gfxcards}"
+    if [ "${summary_gfxcard_nb}" -eq 1 ]; then
+        summary_local_str="${summary_local_str}Modèle : ${summary_gfxcard_model[0]}\n"
+        if [ ! -z "${summary_gfxcard_vendor[0]}" ]; then
+            summary_local_str="${summary_local_str}Fabricant : ${summary_gfxcard_vendor[0]}\n"
+        fi
+    elif [ "${summary_gfxcard_nb}" -gt 1 ]; then
+        unset summary_gfxcard_arraylength
+        summary_gfxcard_arraylength=${#summary_gfxcard_model[@]}
+        for (( i=1; i<${summary_gfxcard_arraylength}+1; i++ )); do
+            summary_local_str="${summary_local_str}Carte $i : ${summary_gfxcard_model[$i-1]} (fabricant : ${summary_gfxcard_vendor[$i-1]})\n"
+        done
+    fi
+fi
+if [ -z "${summary_local_str}" ]; then
+    summary_local_str="\nAucune carte graphique détectée.\n"
+else
+    if [ "${summary_gfxcard_nb}" -eq 1 ]; then
+        summary_local_str="\nCarte graphique\n---------------\n${summary_local_str}"
+    else
+        summary_local_str="\nCartes graphiques\n-----------------\n${summary_local_str}"
+    fi
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# Son
+unset summary_local_str
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset summary_sounds
+    summary_sounds="$(${default_path}hwinfo --sound | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    summary_sound_nb=0
+    unset $summary_sound_model $summary_sound_vendor
+    declare -a summary_sound_model summary_sound_vendor
+    unset summary_local_sound_model summary_local_sound_vendor
+    while IFS= read -r summary_line; do
+        summary_local_sound_model=$(str_str "${summary_line}" "Model:")
+        if [ ! -z "${summary_local_sound_model}" ]; then
+            summary_sound_model[${summary_sound_nb}]=$(sanityse_terminal_output "${summary_local_sound_model}")
+            summary_local_sound_vendor=$(str_str "$summary_line" "Vendor:")
+            if [ ! -z "${summary_local_sound_vendor}" ]; then
+                summary_sound_vendor[${summary_sound_nb}]=$(sanityse_terminal_output "$summary_local_sound_vendor")
+            fi
+            ((summary_sound_nb++))
+        fi
+    done <<< "${summary_sounds}"
+    if [ "${summary_sound_nb}" -eq 1 ]; then
+        summary_local_str="${summary_local_str}Modèle : ${summary_sound_model[0]}\n"
+        if [ ! -z "${summary_sound_vendor[0]}" ]; then
+            summary_local_str="${summary_local_str}Fabricant : ${summary_sound_vendor[0]}\n"
+        fi
+    elif [ "${summary_sound_nb}" -gt 1 ]; then
+        unset summary_sound_arraylength
+        summary_sound_arraylength=${#summary_sound_model[@]}
+        for (( i=1; i<${summary_sound_arraylength}+1; i++ )); do
+            summary_local_str="${summary_local_str}Périphérique $i : ${summary_sound_model[$i-1]} (fabricant : ${summary_sound_vendor[$i-1]})\n"
+        done
+    fi
+fi
+if [ -z "${summary_local_str}" ]; then
+    summary_local_str="\nAucun périphérique son détecté.\n"
+else
+    summary_local_str="\nSon\n---\n${summary_local_str}"
+fi
+
+summary_str="${summary_str}${summary_local_str}"
+
+# Création du fichier et affichage
+echo -e "${summary_str}" > "${summary_file}"
+$(direct_edit_file "${summary_file}")
+
+exit 0

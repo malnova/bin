@@ -1,0 +1,18 @@
+#!/bin/bash
+. default-commands
+
+unset keyboard_layout keyboard_variant
+if [ -e "${default_path}xkblayout-state" ]; then
+    # Nécessite l'application xkblayout-state compilée à partir de
+    # https://github.com/nonpop/xkblayout-state avec les instructions suivantes :
+    # git clone https://github.com/nonpop/xkblayout-state
+    # make
+    $(${default_path}xkblayout-state set +1)
+    keyboard_layout=$(${default_path}xkblayout-state print "%s")
+    keyboard_variant=$(${default_path}xkblayout-state print "%v")
+    if [ -z "$keyboard_variant" ]; then
+        ${default_path}dunstify -r 8192 -t 2000 "Clavier : ${keyboard_layout}"
+    else
+        ${default_path}dunstify -r 8192 -t 2000 "Clavier : ${keyboard_layout} (${keyboard_variant})"
+    fi
+fi
