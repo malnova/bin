@@ -64,12 +64,6 @@ if [ -d "${SCRIPTS_DIR}" ]; then
     local_file="${SCRIPTS_DIR}/cycle-video-rotate.lua"
     remote_file="https://raw.githubusercontent.com/VideoPlayerCode/mpv-tools/master/scripts/cycle-video-rotate.lua"
     check_if_new "$local_file" "$remote_file"
-
-    # Script turn-off-dpms pour arrêter automatiquement DPMS
-    # quand MPV est lancé
-    local_file="${SCRIPTS_DIR}/turn-off-dpms.lua"
-    remote_file="https://gist.githubusercontent.com/nilninull/f366f6feeeb0b73dbaeff59f681cb1d2/raw/59e48186f958d956b0e86a9d6e128e66d9ae8056/turn-off-dpms.lua"
-    check_if_new "$local_file" "$remote_file"
 else
     echo "Erreur : le dossier ${SCRIPTS_DIR} n'existe pas."
 fi
