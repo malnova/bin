@@ -1,0 +1,288 @@
+#!/bin/bash
+
+download_dir="$HOME"
+error_file="$HOME/.cache/streamer_errors"
+temp_file="$HOME/.cache/streamer_temp_file"
+notification_length=4000
+
+Geturl() {
+    if [ -n "$playlist_items" ]; then
+        playlist_options="$options --playlist-items $playlist_items"
+    else
+        playlist_options="$options --playlist-start $playlist_start --playlist-end $playlist_end"
+    fi
+    # Téléchargement de la playlist
+    if [ "$is_stream" = TRUE ]; then
+        if [ "$only_audio" = TRUE ]; then
+            youtube-dl --extract-audio --audio-format mp3 $url 2>$error_file
+        else
+            if [ "$sub_add" = TRUE ]; then
+                youtube-dl $playlist_options $formats --write-auto-sub --write-sub --embed-subs --sub-lang $sub_languages $url 2>$error_file
+            else
+                youtube-dl $playlist_options $formats $url 2>$error_file
+            fi
+        fi
+        if [ -f "$error_file" ] && grep -q "ERROR" "$error_file" ; then
+            DisplayErrors
+        else
+            notify-send -t $notification_length "Fin du téléchargement de la playlist"
+        fi
+        CleanTempFiles
+        exit
+    fi
+    # Lecture de la playlist
+    output=$(youtube-dl $playlist_options $formats --dump-json --flat-playlist $url 2>$error_file)
+    all_urls=$(echo $output | jq -r '.url')
+    if ( ( [ "$all_urls" != "${all_urls%youtu.be*}" ] || [ "$all_urls" != "${all_urls%youtube.com*}" ] ) && [ "$all_urls" != "${all_urls%/embed/*}" ] ) || ( ( [ "$url" != "${url%youtu.be*}" ] || [ "$url" != "${url%youtube.com*}" ] ) && ( [ "$url" != "${url%&list=*}" ] || [ "$url" != "${url%/user/*}" ] || [ "$url" != "${url%search_query=*}" ] || [ "$url" != "${url%/channel/*}" ] || [ "$url" != "${url%/show/*}" ] ) ) || ( [ "$url" != "${url%dailymotion.com*}" ] && ( [ "$url" != "${url%/playlist/*}" ] || [ "$url" != "${url%/user/*}" ] || [ "$url" == "${url%/video/*}" ] ) ) || [ $(echo "$output" | wc -l) -gt 1 ]; then
+        if [ -f "$error_file" ] && grep -q "ERROR" "$error_file" ; then
+            DisplayErrors
+        else
+            if [ -f "$error_file" ]; then
+                rm $error_file
+            fi
+            if ( [ "$url" != "${url%youtu.be*}" ] || [ "$url" != "${url%youtube.com*}" ] ) && ( [ "$url" != "${url%&list=*}" ] || [ "$url" != "${url%/user/*}" ] ); then
+                url=$(echo $output | jq -r '.url' | sed 's_^_https://youtube.com/watch?v=_')
+            else
+                url=$all_urls
+            fi
+            while read -r line; do
+                url=$line
+                playlist_end=1
+                Geturl
+            done <<< "$url"
+        fi
+    else
+        if [ -f "$error_file" ] && grep -q "ERROR" "$error_file" ; then
+            DisplayErrors
+        else
+            if [ -f "$error_file" ]; then
+                rm $error_file
+            fi
+            single_url=$(echo $output | jq -r '.url')
+            if [ "$single_url" != "${single_url%http://*}" ] && ( [ "$HTTPS" = "En sortie" ] || [ "$HTTPS" = "En entrée et en sortie" ] ); then
+                single_url="${single_url/http:/https:}"
+            fi
+            single_title=$(echo $output | jq -r '.title' | tr '\n' ' ')
+            if [ "$sub_add" = TRUE ]; then
+                sub_options="--write-auto-sub --write-sub --sub-lang $sub_languages --skip-download -o $temp_file.%(ext)s"
+                sub_separator="[info] Writing video subtitles to: "
+                sub=$(youtube-dl $sub_options $url 2>$error_file)
+                sub_file=`echo ${sub#*"$sub_separator"} | cut -d ' ' -f 1`
+                if [ ! -f "$sub_file" ]; then
+                    notify-send -t $notification_length "Sous-titres non disponibles !"
+                    is_sub=0
+                else
+                    is_sub=1
+                fi
+            fi
+            Streamurl
+            CleanTempFiles
+        fi
+    fi
+}
+
+Streamurl() {
+    if [[ "$player" =~ "vlc" ]]; then
+        if [ "$is_sub" = "1" ]; then
+            $player --sub-file="$sub_file" --input-title-format="$single_title" "$single_url" &>/dev/null
+        else
+            $player --input-title-format="$single_title" "$single_url" &>/dev/null
+        fi
+    elif [[ "$player" =~ "mpv" ]]; then
+        if [ "$is_sub" = "1" ]; then
+            $player --sub-file="$sub_file" --force-media-title="$single_title" "$single_url" &>/dev/null
+        else
+            $player --force-media-title="$single_title" "$single_url" &>/dev/null
+        fi
+    elif [[ "$player" =~ "ffplay" ]]; then
+        if [ "$is_sub" = "1" ]; then
+            $player -vf subtitles="$sub_file" -window_title "$single_title" "$single_url" &>/dev/null
+        else
+            $player -window_title "$single_title" "$single_url" &>/dev/null
+        fi
+    fi
+}
+
+DisplayErrors() {
+    while read errors; do
+        if [ -n "$errors" ] && [ "$errors" != "${errors%ERROR*}" ]; then
+            notify-send -t $notification_length "$(echo $errors | tr '<' ' ' | tr '&' ' ')"
+        fi
+    done < $error_file
+    rm $error_file
+}
+
+CleanTempFiles() {
+    if [ -f "$sub_file" ]; then
+        rm $temp_file.*
+    fi
+    if [ -f "$temp_file" ]; then
+        rm $temp_file
+    fi
+    if [ -f "$error_file" ]; then
+        rm $error_file
+    fi
+}
+
+# Affichage du formulaire
+FORM=$(yad --width 650 --center \
+    --window-icon="video" \
+    --title="Streaming audio/vidéo" \
+    --form \
+        --field="Entrez une url réseau :" \
+        --field="Qualité (de 1 basse à 3 haute, ou personnalisée ;\npas de merge avec +) :" \
+        --field="Audio seulement":CHK \
+        --field="Ne pas lire la playlist ; la télécharger seulement":CHK \
+        --field=:LBL \
+        --field="Lire à partir de (hh:mm:ss) :" \
+        --field="Lire avec :":CB \
+        --field=:LBL \
+        --field="Commencer la playlist au numéro :":NUM \
+        --field="Nombre de vidéos dans la playlist :":NUM \
+        --field="Choisir les numéros dans la playlist (1,2,5-8...) :" \
+        --field="Lire la playlist en boucle":CHK \
+        --field=:LBL \
+        --field="Si possible, inclure les sous-titres":CHK \
+        --field="Langue(s) des sous-titres :" \
+        --field="Ne pas lire la playlist ; afficher seulement la liste des sous-titres disponibles":CHK \
+        '' '2' FALSE FALSE \
+        '' \
+        '00:00:00' 'FFplay!^MPV!VLC' \
+        '' \
+        '1!1..9999!1!0' '3!1..9999!1!0' '' FALSE \
+        '' \
+        FALSE 'fr,en' FALSE)
+
+# Récupération des valeurs du formulaire
+url=$(echo $FORM | cut -d '|' -f 1)
+quality=$(echo $FORM | cut -d '|' -f 2)
+only_audio=$(echo $FORM | cut -d '|' -f 3)
+is_stream=$(echo $FORM | cut -d '|' -f 4)
+start_time=$(echo $FORM | cut -d '|' -f 6 | tr -d '[[:space:]]')
+start_hh=$(echo $start_time | cut -d ':' -f 1)
+start_mm=$(echo $start_time | cut -d ':' -f 2)
+start_ss=$(echo $start_time | cut -d ':' -f 3)
+player_name=$(echo $FORM | cut -d '|' -f 7)
+playlist_start=$(echo $FORM | cut -d '|' -f 9 | cut -d ',' -f 1)
+playlist_end=$(echo $FORM | cut -d '|' -f 10 | cut -d ',' -f 1)
+playlist_end=$(( $playlist_start+$playlist_end-1 ))
+playlist_items=$(echo $FORM | cut -d '|' -f 11 | tr -d '[[:space:]]')
+playlist_loop=$(echo $FORM | cut -d '|' -f 12)
+sub_add=$(echo $FORM | cut -d '|' -f 14)
+sub_languages=$(echo $FORM | cut -d '|' -f 15)
+is_sub=$(echo $FORM | cut -d '|' -f 16)
+
+if [ -n "$url" ]; then
+    # Ajouter un préfixe si l'url n'en contient pas
+    url="$(echo -e "$url" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    if [ "$url" == "${url%http://*}" ] && [ "$url" == "${url%https://*}" ]; then
+        url="http://$url"
+    fi
+    # Vérification de la validité de l'url
+    is_url_valid='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+    if [[ $url =~ $is_url_valid ]]; then
+        # Affichage des sous-titres seuls
+        if [ "$is_sub" = TRUE ]; then
+            subtitles=$(youtube-dl --list-subs $url 2>$temp_file)
+            sub_lang=""
+            if [[ "$subtitles" =~ "Available subtitles for " ]]; then
+                IFS=$' '
+                sub_lang=$(echo ${subtitles#*"Available subtitles for "} | cut -d ':' -f 2)
+                if [ ! -z "$sub_lang" ]; then
+                    notify-send -t $notification_length "Sous-titres disponibles :$(echo $sub_lang)"
+                fi
+            fi
+            if [[ "$subtitles" =~ "Available automatic captions for " ]]; then
+                IFS=$' '
+                sub_lang=$(echo ${subtitles#*"Available automatic captions for "} | cut -d ':' -f 2 | sed 's/Available.*//')
+                if [ ! -z "$sub_lang" ]; then
+                    notify-send -t $notification_length "Sous-titres automatiques disponibles :$(echo $sub_lang)"
+                fi
+            fi
+            if [ -z "$sub_lang" ]; then
+                notify-send -t $notification_length "Sous-titres non disponibles !"
+            fi
+            if [ -f "$error_file" ] && grep -q "ERROR" "$error_file" ; then
+                DisplayErrors
+            fi
+            CleanTempFiles
+            exit
+        fi
+        # Vérification de l'heure de début
+        if [[ "$start_hh" != +([0-9]) ]] || [[ "$start_mm" != +([0-9]) ]] || [[ "$start_ss" != +([0-9]) ]] || [ $start_hh -lt 0 ] || [ $start_hh -gt 23 ] || [ $start_mm -lt 0 ] || [ $start_mm -gt 59 ] || [ $start_ss -lt 0 ] || [ $start_ss -gt 59 ]; then
+            notify-send -t $notification_length "Le format de l'heure de début n'est pas valide !"
+        else
+            start_time=$(( (10#$start_hh*3600)+(10#$start_mm*60)+10#$start_ss ))
+            # Vérification des numéros dans la playlist
+            if [ -n "$playlist_items" ] && ( [[ "$playlist_items" != +([0-9,-]) ]] || [[ "${playlist_items:0:1}" != +([0-9]) ]] || [[ "${playlist_items:${#playlist_items}-1}" != +([0-9]) ]] ); then
+                notify-send -t $notification_length "Le format des numéros dans la playlist n'est pas valide !"
+            else
+                # Construction de la chaîne d'options
+                options="--cache-dir /tmp"
+                # HTTPS si possible
+                HTTPS=""
+                if ( [ "$url" != "${url%arte.tv*}" ] || [ "$url" != "${url%dailymotion.com*}" ] || [ "$url" != "${url%uptobox.com*}" ] ) && [ "$url" != "${url%http://*}" ]; then
+                    HTTPS="En entrée"
+                fi
+                if ( [ "$url" != "${url%facebook.com*}" ] || [ "$url" != "${url%fbcdn.net*}" ] || [ "$url" != "${url%googlevideo.com*}" ] || [ "$url" != "${url%twimg.com*}" ] || [ "$url" != "${url%twitter.com*}" ] || [ "$url" != "${url%youtu.be*}" ] || [ "$url" != "${url%youtube.com*}" ] || [ "$url" != "${url%imgur.com*}" ] || [ "$url" != "${url%gfycat.com*}" ] ) && ( [ "$url" != "${url%http://*}" ] || [ "$url" != "${url%https://*}" ] ); then
+                    HTTPS="En entrée et en sortie"
+                fi
+                if [ "$url" != "${url%http://*}" ] && ( [ "$HTTPS" = "En entrée" ] || [ "$HTTPS" = "En entrée et en sortie" ] ); then
+                    url="${url/http:/https:}"
+                fi
+                if [ "$url" != "${url%&feature=youtu.be*}" ]; then
+                    url="${url//&feature=youtu.be}"
+                fi
+                if [ "$url" != "${url%?feature=youtu.be&*}" ]; then
+                    url="${url//feature=youtu.be&}"
+                fi
+                if [ "$url" != "${url%watch?v=*}" ] && [ "$url" != "${url%&list=*}" ]; then
+                    url="${url%&list*}"
+                fi
+                # Choix des formats
+                if [ "$only_audio" = TRUE ]; then
+                    formats="--format bestaudio/best"
+                elif [ "$quality" = "1" ]; then
+                    formats="--format worst/HTTPS_MP4_LQ_1/HTTPS_MP4_MQ_1/17/92/160/240p/SD/progressive_sd_src/hls-246/240/best[width<=600]/best"
+                elif [ "$quality" = "2" ]; then
+                    formats="--format HTTPS_MP4_MQ_1/HTTPS_MP4_EQ_1/18/43/5/36/17/93/135/134/133/160/1/0/360p/240p/SD/progressive_md_src/progressive_sd_src/hls-460/380/best[width<=720]/best"
+                elif [ "$quality" = "3" ]; then
+                    formats="--format best"
+                else
+                    formats="--format $quality"
+                fi
+                # Construction de la chaîne player
+                if [ "$player_name" = "VLC" ]; then
+                    player="vlc --no-video-title-show --play-and-exit"
+                    if [ "$start_time" -gt 0 ]; then
+                        player="$player --start-time=$start_time"
+                    fi
+                    if [ "$playlist_loop" = TRUE ]; then
+                        player="$player --loop"
+                    fi
+                elif [ "$player_name" = "MPV" ]; then
+                    player="mpv --force-window --volume-max=1000 --autofit-larger=90%x90% --user-agent='Mozilla/5.0'"
+                    if [ "$start_time" -gt 0 ]; then
+                        player="$player --start=$start_time"
+                    fi
+                    if [ "$playlist_loop" = TRUE ]; then
+                        player="$player --loop=yes"
+                    fi
+                elif [ "$player_name" = "FFplay" ]; then
+                    player="ffplay -autoexit"
+                    if [ "$start_time" -gt 0 ]; then
+                        player="$player -ss $start_time"
+                    fi
+                    if [ "$playlist_loop" = TRUE ]; then
+                        player="$player -loop -1"
+                    fi
+                fi
+                Geturl
+                CleanTempFiles
+                notify-send -t $notification_length "Fin de la playlist"
+            fi
+        fi
+    else
+        notify-send -t $notification_length "URL réseau non valide !"
+    fi
+fi
