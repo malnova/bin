@@ -1,2 +1,1 @@
-# bin
-Mes scripts.
+# scripts
