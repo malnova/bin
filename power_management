@@ -31,12 +31,12 @@
 # désactive le mode en question. Exemple : xset dpms 180 0 300
 # Pour forcer la mise en veille (OU l'hibernation OU l'arrêt immédiat)
 # de l'écran : xset dpms force standby (OU suspend OU off)
-# Activer DPMS entraîne le verrouillage de la session !
+# Éteindre l'écran entraîne aussi le verrouillage de la session !
 #
 if [ "$1" = "start" ]; then
     # Réglage de DPMS (pour activation possible avec C-A-s) et désactivation
     if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
-        (sleep 2 && xset dpms 0 0 300 && xset -dpms) &
+        (sleep 2 && xset dpms 0 0 330 && xset -dpms) &
     elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
         (sleep 2 && xset dpms 0 0 180 && xset -dpms) &
     else
@@ -74,9 +74,11 @@ locker="xidlehook"
 if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
     # Le verrouillage de lightdm (avec dm-tool ou light-locker-command) entraîne
     # aussi l'extinction de l'écran !
+    # "dm-tool lock" ou "light-locker-command -l" empêchent "systemctl poweroff"
+    # de fonctionner.
     locker_command="xidlehook --not-when-fullscreen \
-        --timer 330 \
-            'light-locker-command -l' \
+        --timer 360 \
+            'dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.SetActive boolean:true'
             ''"
 elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
     locker_command="xidlehook --not-when-fullscreen \
