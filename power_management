@@ -113,17 +113,20 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
             notification=1
         fi
         if [ "$1" = "start" ]; then
+            if [ "$(pidof $locker)" ]; then
+                killall -q -9 $locker
+            fi
             eval $locker_command &>/dev/null &
         elif [ "$1" = "kill" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q $locker
+                killall -q -9 $locker
                 if [ "$notification" = "1" ]; then
                     dunstify -r 16384 -t 2000 "$notification_on_kill"
                 fi
             fi
         elif [ "$1" = "restart" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q $locker
+                killall -q -9 $locker
                 sleep 1
                 eval $locker_command &>/dev/null &
             else
@@ -134,7 +137,7 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
             fi
         elif [ "$1" = "toggle" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q $locker
+                killall -q -9 $locker
                 if [ "$notification" = "1" ]; then
                     dunstify -r 16384 -t 2000 "$notification_on_kill"
                 fi
