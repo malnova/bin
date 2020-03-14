@@ -1,10 +1,5 @@
 #!/bin/bash
-# conkywonky
-# ----------
-# Many moons ago, Conky did not automatically restart when changes were
-# made to its config files. This script was used to restart it. It does not
-# really serve any purpose now, but I like the name and some people may still
-# be using/referencing it.
+# Inspiré par le script "conkywonky"
 
 restart_conky(){
     if [ -e "$HOME/.config/conky/" ]; then
@@ -25,6 +20,7 @@ restart_conky(){
 
 if [ "$(pidof conky)" ]; then
     killall -q conky
+    sleep 1
     restart_conky
     exit
 else
