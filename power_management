@@ -50,11 +50,19 @@ fi
 
 
 # VERROUILLAGE ET / OU MISE EN VEILLE
+#
+# Dans une configuration multi-utilisateurs, le processus du locker devrait
+# être tué lors de la fermeture de la session pour ne pas interférer avec
+# les sessions des autres utilisateurs. Pour cela, décommenter et modifier
+# la ligne KillUserProcesses du fichier /etc/systemd/logind.conf de la façon
+# suivante : KillUserProcesses=yes
+#
 # NOM du processus correspondant au locker utilisé (xautolock, xidlehook...) 
 locker="xidlehook"
+#
 # COMMANDE à utiliser pour le locker
 # Si le locker utilisé est xautolock, il nécessite le chemin COMPLET (par ex.
-# avec /bin/ ou /usr/bin/... ou ${default_path}) dans la commande
+# avec /bin/ ou /usr/bin/... ou ${path}) dans la commande.
 # Voir la page suivante pour les options possibles avec systemctl :
 # https://wiki.archlinux.org/index.php/Systemd
 # Pour une explication des options de gestion d'énergie :
@@ -103,7 +111,6 @@ fi
 #
 notification_on_restart="La mise en veille est activée."
 notification_on_kill="La mise en veille est désactivée."
-notification_on_error="Erreur : un locker déjà actif n'a pas pu être interrompu."
 if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
     locker_dir="/tmp/locker.exclusivelock"
     if mkdir "$locker_dir"; then
@@ -118,49 +125,22 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
                 killall -q $locker
                 sleep 0.5
             fi
-            # Il faut de nouveau tester l'existence d'un processus
-            # xidlehook, au cas où la session d'un nouvel utilisateur
-            # ait été ouverte, ce qui empêcherait d'avoir tué le
-            # processus existant ouvert par un autre utilisateur.
-            # Dans tous les cas, on doit empêcher deux processus
-            # xidlehook de fonctionner en même temps.
-            if [ "$(pidof $locker)" ]; then
-                if [ "$notification" = "1" ]; then
-                    dunstify -r 16384 -t 2000 "$notification_on_error"
-                fi
-            else
-                eval $locker_command &>/dev/null &
-                if [ "$notification" = "1" ]; then
-                    dunstify -r 16384 -t 2000 "$notification_on_restart"
-                fi
+            eval $locker_command &>/dev/null &
+            if [ "$notification" = "1" ]; then
+                dunstify -r 16384 -t 2000 "$notification_on_restart"
             fi
         elif [ "$1" = "kill" ]; then
             if [ "$(pidof $locker)" ]; then
                 killall -q $locker
-                sleep 0.5
-                # Si un processus d'un autre utilisateur existait,
-                # il n'aura pas pu être tué. Il faut donc tester
-                # de nouveau la présence du prossessus avant
-                # d'afficher la notification.
-                if [ "$notification" = "1" ]; then
-                    if [ "$(pidof $locker)" ]; then
-                        dunstify -r 16384 -t 2000 "$notification_on_error"
-                    else
-                        dunstify -r 16384 -t 2000 "$notification_on_kill"
-                    fi
-                fi
+            fi
+            if [ "$notification" = "1" ]; then
+                dunstify -r 16384 -t 2000 "$notification_on_kill"
             fi
         elif [ "$1" = "toggle" ]; then
             if [ "$(pidof $locker)" ]; then
                 killall -q $locker
-                sleep 0.5
-                # Même problème que ci-dessus.
                 if [ "$notification" = "1" ]; then
-                    if [ "$(pidof $locker)" ]; then
-                        dunstify -r 16384 -t 2000 "$notification_on_error"
-                    else
-                        dunstify -r 16384 -t 2000 "$notification_on_kill"
-                    fi
+                    dunstify -r 16384 -t 2000 "$notification_on_kill"
                 fi
             else
                 eval $locker_command &>/dev/null &
