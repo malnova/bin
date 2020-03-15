@@ -76,20 +76,20 @@ if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
     # aussi l'extinction de l'écran !
     # "dm-tool lock" ou "light-locker-command -l" empêchent "systemctl poweroff"
     # de fonctionner.
-    locker_command="xidlehook --not-when-fullscreen \
-        --timer 360 \
+    locker_command="xidlehook --not-when-fullscreen
+        --timer 360
             'dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.SetActive boolean:true'
             ''"
 elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
-    locker_command="xidlehook --not-when-fullscreen \
-        --timer 180 \
-            'backlight -save; backlight -dim' \
-            'backlight -restore' \
-        --timer 10 \
-            'slock' \
-            'backlight -restore' \
-        --timer 10 \
-            'systemctl suspend' \
+    locker_command="xidlehook --not-when-fullscreen
+        --timer 180
+            'backlight -save; backlight -dim'
+            'backlight -restore'
+        --timer 10
+            'slock'
+            'backlight -restore'
+        --timer 10
+            'systemctl suspend'
             'backlight -restore'"
 else
     file_path=$(realpath $0)
