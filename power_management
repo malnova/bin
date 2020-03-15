@@ -103,6 +103,7 @@ fi
 #
 notification_on_restart="La mise en veille est activée."
 notification_on_kill="La mise en veille est désactivée."
+notification_on_error="Erreur : un locker déjà actif n'a pas pu être interrompu."
 if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
     locker_dir="/tmp/locker.exclusivelock"
     if mkdir "$locker_dir"; then
@@ -114,25 +115,52 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
         fi
         if [ "$1" = "start" ] || [ "$1" = "restart" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q -9 $locker
-                sleep 1
+                killall -q $locker
+                sleep 0.5
             fi
-            eval $locker_command &>/dev/null &
-            if [ "$notification" = "1" ]; then
-                dunstify -r 16384 -t 2000 "$notification_on_restart"
+            # Il faut de nouveau tester l'existence d'un processus
+            # xidlehook, au cas où la session d'un nouvel utilisateur
+            # ait été ouverte, ce qui empêcherait d'avoir tué le
+            # processus existant ouvert par un autre utilisateur.
+            # Dans tous les cas, on doit empêcher deux processus
+            # xidlehook de fonctionner en même temps.
+            if [ "$(pidof $locker)" ]; then
+                if [ "$notification" = "1" ]; then
+                    dunstify -r 16384 -t 2000 "$notification_on_error"
+                fi
+            else
+                eval $locker_command &>/dev/null &
+                if [ "$notification" = "1" ]; then
+                    dunstify -r 16384 -t 2000 "$notification_on_restart"
+                fi
             fi
         elif [ "$1" = "kill" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q -9 $locker
+                killall -q $locker
+                sleep 0.5
+                # Si un processus d'un autre utilisateur existait,
+                # il n'aura pas pu être tué. Il faut donc tester
+                # de nouveau la présence du prossessus avant
+                # d'afficher la notification.
                 if [ "$notification" = "1" ]; then
-                    dunstify -r 16384 -t 2000 "$notification_on_kill"
+                    if [ "$(pidof $locker)" ]; then
+                        dunstify -r 16384 -t 2000 "$notification_on_error"
+                    else
+                        dunstify -r 16384 -t 2000 "$notification_on_kill"
+                    fi
                 fi
             fi
         elif [ "$1" = "toggle" ]; then
             if [ "$(pidof $locker)" ]; then
-                killall -q -9 $locker
+                killall -q $locker
+                sleep 0.5
+                # Même problème que ci-dessus.
                 if [ "$notification" = "1" ]; then
-                    dunstify -r 16384 -t 2000 "$notification_on_kill"
+                    if [ "$(pidof $locker)" ]; then
+                        dunstify -r 16384 -t 2000 "$notification_on_error"
+                    else
+                        dunstify -r 16384 -t 2000 "$notification_on_kill"
+                    fi
                 fi
             else
                 eval $locker_command &>/dev/null &
