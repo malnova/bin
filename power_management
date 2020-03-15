@@ -82,8 +82,8 @@ locker="xidlehook"
 if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
     # Le verrouillage de lightdm (avec dm-tool ou light-locker-command) entraîne
     # aussi l'extinction de l'écran !
-    # "dm-tool lock" ou "light-locker-command -l" empêchent "systemctl poweroff"
-    # de fonctionner.
+    # "dm-tool lock" ou "light-locker-command -l" semblent empêcher
+    # "systemctl poweroff" de fonctionner.
     locker_command="xidlehook --not-when-fullscreen
         --timer 360
             'dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.SetActive boolean:true'
@@ -121,7 +121,7 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
             notification=1
         fi
         if [ "$1" = "start" ] || [ "$1" = "restart" ]; then
-            if [ "$(pidof $locker)" ]; then
+            if pgrep -u "$USER" "$locker" &>/dev/null; then
                 killall -q $locker
                 sleep 0.5
             fi
@@ -130,14 +130,14 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
                 dunstify -r 16384 -t 2000 "$notification_on_restart"
             fi
         elif [ "$1" = "kill" ]; then
-            if [ "$(pidof $locker)" ]; then
+            if pgrep -u "$USER" "$locker" &>/dev/null; then
                 killall -q $locker
             fi
             if [ "$notification" = "1" ]; then
                 dunstify -r 16384 -t 2000 "$notification_on_kill"
             fi
         elif [ "$1" = "toggle" ]; then
-            if [ "$(pidof $locker)" ]; then
+            if pgrep -u "$USER" "$locker" &>/dev/null; then
                 killall -q $locker
                 if [ "$notification" = "1" ]; then
                     dunstify -r 16384 -t 2000 "$notification_on_kill"
@@ -149,7 +149,7 @@ if [ "x$1" != "x" ] && [ "x$locker_command" != "x" ]; then
                 fi
             fi
         elif [ "$1" = "status" ]; then
-            if [ "$(pidof $locker)" ]; then
+            if pgrep -u "$USER" "$locker" &>/dev/null; then
                 dunstify -r 16384 -t 2000 "$notification_on_restart"
             else
                 dunstify -r 16384 -t 2000 "$notification_on_kill"
