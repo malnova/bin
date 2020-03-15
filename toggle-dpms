@@ -5,7 +5,7 @@
 # Use mkdir as an atomic operation to avoid multiple scripts running at once
 #
 lock_dir="/tmp/dpmsctl.exclusivelock"
-if mkdir "$lock_dir"; then
+if mkdir "$lock_dir" 2>/dev/null; then
     trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
     notification_on="La mise en veille de l'écran est activée."
     notification_off="La mise en veille de l'écran est désactivée."
