@@ -6,9 +6,13 @@
 lock_dir="/tmp/xrandrctl.exclusivelock"
 if mkdir "$lock_dir" 2>/dev/null; then
     trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
-    # Pour ORDIPORTABLE, décommenter la ligne suivante :
-    #xrandr --output VGA-1 --off --output HDMI-1 --off --output DP-1 --off --output eDP-1 --auto --rotate normal --pos 0x0 --primary
-
-    # Pour ORDIBUREAU, décommenter la ligne suivante :
-    #xrandr --output VGA-1 --off --output HDMI-1 --off --output DVI-I-1 --auto --rotate normal --pos 0x0 --primary
+    if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
+        xrandr --output VGA-1 --off --output HDMI-1 --off --output DVI-I-1 --auto --rotate normal --pos 0x0 --primary
+    elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
+        xrandr --output VGA-1 --off --output HDMI-1 --off --output DP-1 --off --output eDP-1 --auto --rotate normal --pos 0x0 --primary
+    else
+        file_path=$(realpath $0)
+        dunstify -r 16384 -t 4000 "Erreur : le nom d'hôte $HOSTNAME est inconnu dans ${file_path}."
+        exit 1
+    fi
 fi
