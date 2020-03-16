@@ -1,5 +1,0 @@
-#!/bin/bash
-. default-commands
-
-${default_path}wget -q -O - https://github.com/ghacksuserjs/ghacks-user.js/raw/master/user.js | sed -r ':a; s%(.*)/\*.*\*/%\1%; ta; /\/\*/ !b; N; ba' | sed '/^  *\/\// d' | sed '/^[[:space:]]*$/d;s/[[:space:]]*$//' | awk '!/user\.js\.parrot/' | grep -e '^user_pref' | sed 's/user_pref/lockPref/g' | sort > ${HOME}/.cache/ghacks-user.txt
-$(direct_compare_files "${HOME}/.cache/ghacks-user.txt" "/usr/lib/firefox/mozilla.cfg")

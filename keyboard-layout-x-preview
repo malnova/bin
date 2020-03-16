@@ -1,31 +1,30 @@
 #!/bin/bash
-. default-commands
 
 unset keyboard keyboard_layout keyboard_variant
-if [ -e "${default_path}xkblayout-state" ]; then
+if [ -e "xkblayout-state" ]; then
     # Nécessite l'application xkblayout-state installée à partir d'AUR
     # ou compilée à partir de https://github.com/nonpop/xkblayout-state
     # avec les instructions suivantes :
     # git clone https://github.com/nonpop/xkblayout-state
     # make
-    keyboard_layout=$(${default_path}xkblayout-state print "%s")
-    keyboard_variant=$(${default_path}xkblayout-state print "%v")
+    keyboard_layout=$(/usr/bin/xkblayout-state print "%s")
+    keyboard_variant=$(/usr/bin/xkblayout-state print "%v")
 else
     # Sinon récupérer les informations à partir du fichier de configuration
     # Cf Préférences > Clavier > Éditer la configuration
     #
     # !!! Ne fonctionne que si le fichier ne contient qu'une seule disposition
     # de clavier !!!
-    keyboard=$(${default_path}cat /etc/X11/xorg.conf.d/00-keyboard.conf)
+    keyboard=$(cat /etc/X11/xorg.conf.d/00-keyboard.conf)
     keyboard_layout=$(echo "$keyboard" | grep -ioP '^\s*Option "XkbLayout"\s*\K.*' | sed 's/\"//g')
     keyboard_variant=$(echo "$keyboard" | grep -ioP '^\s*Option "XkbVariant"\s*\K.*' | sed 's/\"//g')
 fi
-if [ -e "${default_path}gkbd-keyboard-display" ]; then
+if [ -e "gkbd-keyboard-display" ]; then
     # Nécessite l'application gkbd-keyboard-display installée par
     # le paquet libgnomekbd
     if [ -z "$keyboard_variant" ]; then
-        $(${default_path}gkbd-keyboard-display -l ${keyboard_layout}$)
+        $(/usr/bin/gkbd-keyboard-display -l ${keyboard_layout}$)
     else
-        $(${default_path}gkbd-keyboard-display -l ${keyboard_layout}$'\t'${keyboard_variant})
+        $(/usr/bin/gkbd-keyboard-display -l ${keyboard_layout}$'\t'${keyboard_variant})
     fi
 fi

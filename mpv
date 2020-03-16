@@ -1,5 +1,4 @@
 #!/bin/bash
-. default-commands
 
 # Wrapper pour contourner un bug de xautolock avec mpv :
 # mpv exécute "xdg-screensaver reset" toutes les 10 secondes pour
@@ -15,20 +14,20 @@ unset mpv_options
 mpv_options=" --force-window"
 
 finish() {
-    if [ ! $(${default_path}pidof -x "$0" | ${default_path}wc -w) -gt 2 ]; then 
+    if [ ! $(/usr/bin/pidof -x "$0" | /usr/bin/wc -w) -gt 2 ]; then 
         if [ -f "$mpv_is_xautolock" ]; then
-            ${default_path}rm -f "$mpv_is_xautolock"
-            ${scripts_path}suspend_script restart notification_off
+            /usr/bin/rm -f "$mpv_is_xautolock"
+            /usr/bin/suspend_script restart notification_off
         fi
     fi
 }
 trap finish 0 1 2 3 13 15
 
-if [ "$(${default_path}pidof xautolock)" ]; then
-    ${scripts_path}suspend_script kill notification_off
+if [ "$(/usr/bin/pidof xautolock)" ]; then
+    /usr/bin/suspend_script kill notification_off
     if [ ! -f "$mpv_is_xautolock" ]; then
-        ${default_path}touch "$mpv_is_xautolock"
+        /usr/bin/touch "$mpv_is_xautolock"
     fi
 fi
 
-${default_path}mpv${mpv_options} --watch-later-directory=~/.local/share/mpv/watch_later --stop-screensaver=no "$@"
+/usr/bin/mpv${mpv_options} --watch-later-directory=~/.local/share/mpv/watch_later --stop-screensaver=no "$@"

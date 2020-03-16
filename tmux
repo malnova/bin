@@ -1,4 +1,3 @@
 #!/bin/bash
-. default-commands
 
-${default_path}tmux -f ${HOME}/.config/tmux.conf "$@"
+/usr/bin/tmux -f $HOME/.config/tmux.conf "$@"

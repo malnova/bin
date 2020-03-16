@@ -1,19 +1,18 @@
 #!/bin/bash
-. default-commands
 
 file=1
 while [ "$file" ]; do
-    file=$(${default_path}ls -a -1 --group-directories-first | ${default_path}dmenu -b -i -p "$(basename $(pwd))")
+    file=$(ls -a -1 --group-directories-first | /usr/bin/dmenu -b -i -p "$(basename $(pwd))")
     if [ -e "$file" ]; then
         owd=$(pwd)
         if [ -d "$file" ]; then
             cd "$file"
         else [ -f "$file" ]
             if which whippet &>/dev/null; then
-                exec ${default_path}whippet -M "$owd/$file" &
+                exec /usr/bin/whippet -M "$owd/$file" &
                 unset file
             elif which xdg-open &>/dev/null; then
-                exec ${default_path}xdg-open "$owd/$file" &
+                exec /usr/bin/xdg-open "$owd/$file" &
                 unset file
             fi
         fi
