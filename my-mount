@@ -1,0 +1,157 @@
+#!/bin/bash
+
+unset credentials_files folders_local folders_remote credentials_files_length folders_local_length folders_remote_length folder folders uservar passvar folder_to_mount mount_options
+
+# Optionnel : emplacement des fichiers textes contenant les informations
+# d'identification pour chaque dossier à monter, sous la forme :
+# username=xxxxx
+# password=xxxxx
+# Pour les protéger, faire un sudo chmod 600 sur ces fichiers.
+# On peut aussi utiliser : nas-mount -u [nom_utilisateur] -p [mot_de_passe]
+declare -a credentials_files=("/root/.config/.nas_cred"  "/root/.config/.nas_cred" "/root/.config/.nas_cred" "/root/.config/.nas_cred" "/root/.config/.ordibureau_cred")
+
+# Emplacements des dossiers locaux sur lesquels effectuer les montages
+# !!! Ils doivent correspondre aux fichiers d'identification
+# DANS LE MÊME ORDRE !!!
+declare -a folders_local=("/mnt/NAS/Documents" "/mnt/NAS/Images" "/mnt/NAS/Musique" "/mnt/NAS/Videos" "/mnt/ORDIBUREAU")
+
+# Emplacements des dossiers distants à monter
+# !!! Ils doivent correspondre aux dossiers locaux DANS LE MÊME ORDRE !!!
+declare -a folders_remote=("//192.168.1.50/Documents" "//192.168.1.50/Images" "//192.168.1.50/Musique" "//192.168.1.50/Videos" "//192.168.1.94/sanfix")
+
+# Options de montage
+mount_options="iocharset=utf8,noperm,vers=1.0"
+
+credentials_files_length=${#credentials_files[@]}
+folders_local_length=${#folders_local[@]}
+folders_remote_length=${#folders_remote[@]}
+if [ "$credentials_files_length" != "$folders_local_length" ] || [ "$credentials_files_length" != "$folders_remote_length" ]; then
+    echo "Erreur : les fichiers d'identification et les dossiers locaux et distants ne correspondent pas."
+    exit
+fi
+
+syntax="nas-mount [-u nom_utilisateur] [-p mot_de_passe] [1 ou 1,2...]\n  Dossiers :\n    t ou T : tous les dossiers"
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo -e "$syntax"
+    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+        echo "    $i : ${folders_remote[$i-1]}"
+    done
+    exit
+fi
+
+if [ "$1" == "-u" ] && [ ! -z "$2" ]; then
+    uservar="$2"
+elif [ "$2" == "-u" ] && [ ! -z "$3" ]; then
+    uservar="$3"
+elif [ "$3" == "-u" ] && [ ! -z "$4" ]; then
+    uservar="$4"
+elif [ "$4" == "-u" ] && [ ! -z "$5" ]; then
+    uservar="$5"
+fi
+if [ "$1" == "-p" ] && [ ! -z "$2" ]; then
+    passvar="$2"
+elif [ "$2" == "-p" ] && [ ! -z "$3" ]; then
+    passvar="$3"
+elif [ "$3" == "-p" ] && [ ! -z "$4" ]; then
+    passvar="$4"
+elif [ "$4" == "-p" ] && [ ! -z "$5" ]; then
+    passvar="$5"
+fi
+
+if ([ ! -z "$1" ] && [ "$1" != "-u" ] && [ "$1" != "-p" ]); then
+    folder="$1"
+elif ([ ! -z "$3" ] && ([ "$1" == "-u" ] || "$1" == "-p" ]) && ([ "$3" != "-u" ] && [ "$3" != "-p" ])); then
+    folder="$3"
+elif ([ ! -z "$5" ] && (([ "$1" == "-u" ] && [ "$3" == "-p" ]) || ([ "$1" == "-p" ] && [ "$3" == "-u" ]))); then
+    folder="$5"
+fi
+
+if [ -z "$folder" ]; then
+    echo -e "Dossiers (* indique un dossier déjà monté) :\n    t ou T : tous les dossiers"
+    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+        if mount | grep "${folders_remote[$i-1]}" >/dev/null; then
+            is_mounted=" *"
+        else
+            is_mounted=""
+        fi
+        echo "    $i : ${folders_remote[$i-1]}${is_mounted}"
+    done
+    echo "    Entrée : quitter sans effectuer de montage"
+    read -p "Dossier(s) à monter (ex. 1 ou 1,2...) : " folder
+fi
+
+if [ -z "$folder" ]; then
+    exit
+fi
+
+if [ "$folder" == "t" ] || [ "$folder" == "T" ]; then
+    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+        if [ "$i" -gt "1" ]; then
+            folders="${folders},"
+        fi
+        folders="${folders}${i}"
+    done
+    folder="${folders}"
+fi
+
+if [[ "$folder" =~ "," ]]; then
+    IFS=',' read -r -a folders <<< "$folder"
+elif [ ! -z "$folder" ]; then
+    folders=("${folder}")
+else
+    echo "Erreur : aucun dossier à monter."
+    exit
+fi
+
+for i in "${folders[@]}"; do
+    folder_to_mount="$i"
+    if [[ $i =~ ^[0-9]+$ ]] && [ "$i" -ge "1" ] && [ "$i" -le "$folders_remote_length" ]; then
+        folder_to_mount="${folders_remote[$i-1]}"
+    else
+        echo "Erreur : $i n'est pas un choix de dossier valide."
+        continue
+    fi
+    if [ ! -d "${folders_local[$i-1]}" ]; then
+        echo "Erreur : ${folders_local[$i-1]} n'existe pas ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        continue
+    fi
+    if [ -L "${folders_local[$i-1]}" ]; then
+        echo "Erreur : ${folders_local[$i-1]} est un lien symbolique ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        continue
+    fi
+    if mount | grep "${folder_to_mount}" >/dev/null; then
+        folder_mountpoint=$(mount | grep "${folder_to_mount}" | tail -1 | awk '{ print $3 }')
+        echo "Le dossier ${folder_to_mount} est déjà monté sur ${folder_mountpoint}."
+    else
+        if [ ! -z "$(ls -A ${folders_local[$i-1]})" ]; then
+            echo "Erreur : ${folders_local[$i-1]} n'est pas vide ; le dossier ${folder_to_mount} ne sera pas monté."
+            continue
+        fi
+        if sudo test ! -f "${credentials_files[$i-1]}"; then
+            if [ -z "$uservar" ]; then
+                read -p "Nom d'utilisateur pour le montage de ${folder_to_mount} : " uservar
+            fi
+            if [ -z "$passvar" ]; then
+                read -sp "Mot de passe pour le montage de ${folder_to_mount} : " passvar
+                echo
+            fi
+        fi
+        if ([ ! -z "$uservar" ] && [ ! -z "$passvar" ]); then
+            mount_options="user=${uservar},password=${passvar},${mount_options}"
+        elif sudo test -f "${credentials_files[$i-1]}"; then
+            mount_options="credentials=${credentials_files[$i-1]},${mount_options}"
+        else
+            echo "Problème de données d'identification : impossible d'effectuer le montage demandé."
+            exit
+        fi
+        $(sudo mount -t cifs "${folder_to_mount}" "${folders_local[$i-1]}" -o "${mount_options}")
+        if [ $? -eq 0 ]; then
+            echo "Dossier ${folder_to_mount} monté sur ${folders_local[$i-1]}."
+        else
+            echo "Erreur : le dossier ${folder_to_mount} n'a pas pu être monté."
+        fi
+    fi
+done
+
+exit 0
