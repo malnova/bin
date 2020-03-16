@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -e "xkblayout-state" ]; then
+if [ -e "/usr/bin/xkblayout-state" ]; then
     # Nécessite l'application xkblayout-state compilée à partir de
     # https://github.com/nonpop/xkblayout-state avec les instructions suivantes :
     # git clone https://github.com/nonpop/xkblayout-state
