@@ -1,4 +1,6 @@
 #!/bin/bash
+bold=$(tput bold)
+reset=$(tput sgr0)
 
 unset folders_local folders_length folder folders folder_to_umount
 
@@ -51,7 +53,7 @@ if [[ "$folder" =~ "," ]]; then
 elif [ ! -z "$folder" ]; then
     folders=("${folder}")
 else
-    echo "Erreur : aucun dossier à démonter."
+    echo "${bold}Erreur :${reset} aucun dossier à démonter."
     exit
 fi
 
@@ -60,11 +62,11 @@ for i in "${folders[@]}"; do
     if [[ $i =~ ^[0-9]+$ ]] && [ "$i" -ge "1" ] && [ "$i" -le "$folders_length" ]; then
         folder_to_umount="${folders_local[$i-1]}"
     else
-        echo "Erreur : $i n'est pas un choix de dossier valide."
+        echo "${bold}Erreur :${reset} $i n'est pas un choix de dossier valide."
         continue
     fi
     if [ ! -d "${folder_to_umount}" ]; then
-        echo "Erreur : ${folder_to_umount} n'existe pas."
+        echo "${bold}Erreur :${reset} ${folder_to_umount} n'existe pas."
         continue
     fi
     if mount | grep "${folder_to_umount}" >/dev/null; then
@@ -72,10 +74,10 @@ for i in "${folders[@]}"; do
         if [ $? -eq 0 ]; then
             echo "Dossier ${folder_to_umount} démonté."
         else
-            echo "Erreur : le dossier ${folder_to_umount} n'a pas pu être démonté."
+            echo "${bold}Erreur :${reset} le dossier ${folder_to_umount} n'a pas pu être démonté."
         fi
     else
-        echo "Erreur : le dossier ${folder_to_umount} n'est pas un point de montage ou est déjà démonté."
+        echo "${bold}Erreur :${reset} le dossier ${folder_to_umount} n'est pas un point de montage ou est déjà démonté."
     fi
 done
 

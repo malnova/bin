@@ -1,4 +1,6 @@
 #!/bin/bash
+bold=$(tput bold)
+reset=$(tput sgr0)
 
 unset credentials_files folders_local folders_remote credentials_files_length folders_local_length folders_remote_length folder folders uservar passvar folder_to_mount mount_options
 
@@ -17,7 +19,7 @@ declare -a folders_local=("/mnt/NAS/Documents" "/mnt/NAS/Images" "/mnt/NAS/Musiq
 
 # Emplacements des dossiers distants à monter
 # !!! Ils doivent correspondre aux dossiers locaux DANS LE MÊME ORDRE !!!
-declare -a folders_remote=("//192.168.1.50/Documents" "//192.168.1.50/Images" "//192.168.1.50/Musique" "//192.168.1.50/Videos" "//192.168.1.94/sanfix")
+declare -a folders_remote=("//192.168.1.50/Documents" "//192.168.1.50/Images" "//192.168.1.50/Musique" "//192.168.1.50/Videos" "//192.168.1.6/sanfix")
 
 # Options de montage
 mount_options="iocharset=utf8,noperm,vers=1.0"
@@ -26,7 +28,7 @@ credentials_files_length=${#credentials_files[@]}
 folders_local_length=${#folders_local[@]}
 folders_remote_length=${#folders_remote[@]}
 if [ "$credentials_files_length" != "$folders_local_length" ] || [ "$credentials_files_length" != "$folders_remote_length" ]; then
-    echo "Erreur : les fichiers d'identification et les dossiers locaux et distants ne correspondent pas."
+    echo "${bold}Erreur :${reset} les fichiers d'identification et les dossiers locaux et distants ne correspondent pas."
     exit
 fi
 
@@ -100,7 +102,7 @@ if [[ "$folder" =~ "," ]]; then
 elif [ ! -z "$folder" ]; then
     folders=("${folder}")
 else
-    echo "Erreur : aucun dossier à monter."
+    echo "${bold}Erreur :${reset} aucun dossier à monter."
     exit
 fi
 
@@ -109,15 +111,15 @@ for i in "${folders[@]}"; do
     if [[ $i =~ ^[0-9]+$ ]] && [ "$i" -ge "1" ] && [ "$i" -le "$folders_remote_length" ]; then
         folder_to_mount="${folders_remote[$i-1]}"
     else
-        echo "Erreur : $i n'est pas un choix de dossier valide."
+        echo "${bold}Erreur :${reset} $i n'est pas un choix de dossier valide."
         continue
     fi
     if [ ! -d "${folders_local[$i-1]}" ]; then
-        echo "Erreur : ${folders_local[$i-1]} n'existe pas ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        echo "${bold}Erreur :${reset} ${folders_local[$i-1]} n'existe pas ; le dossier ${folder_to_mount} n'a pas pu être monté."
         continue
     fi
     if [ -L "${folders_local[$i-1]}" ]; then
-        echo "Erreur : ${folders_local[$i-1]} est un lien symbolique ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        echo "${bold}Erreur :${reset} ${folders_local[$i-1]} est un lien symbolique ; le dossier ${folder_to_mount} n'a pas pu être monté."
         continue
     fi
     if mount | grep "${folder_to_mount}" >/dev/null; then
@@ -125,15 +127,15 @@ for i in "${folders[@]}"; do
         echo "Le dossier ${folder_to_mount} est déjà monté sur ${folder_mountpoint}."
     else
         if [ ! -z "$(ls -A ${folders_local[$i-1]})" ]; then
-            echo "Erreur : ${folders_local[$i-1]} n'est pas vide ; le dossier ${folder_to_mount} ne sera pas monté."
+            echo "${bold}Erreur :${reset} ${folders_local[$i-1]} n'est pas vide ; le dossier ${folder_to_mount} ne sera pas monté."
             continue
         fi
         if sudo test ! -f "${credentials_files[$i-1]}"; then
             if [ -z "$uservar" ]; then
-                read -p "Nom d'utilisateur pour le montage de ${folder_to_mount} : " uservar
+                read -p "${bold}Nom d'utilisateur${reset} pour le montage de ${folder_to_mount} : " uservar
             fi
             if [ -z "$passvar" ]; then
-                read -sp "Mot de passe pour le montage de ${folder_to_mount} : " passvar
+                read -sp "${bold}Mot de passe${reset} pour le montage de ${folder_to_mount} : " passvar
                 echo
             fi
         fi
@@ -142,14 +144,14 @@ for i in "${folders[@]}"; do
         elif sudo test -f "${credentials_files[$i-1]}"; then
             mount_options="credentials=${credentials_files[$i-1]},${mount_options}"
         else
-            echo "Problème de données d'identification : impossible d'effectuer le montage demandé."
+            echo "${bold}Problème de données d'identification :${reset} impossible d'effectuer le montage demandé."
             exit
         fi
         $(sudo mount -t cifs "${folder_to_mount}" "${folders_local[$i-1]}" -o "${mount_options}")
         if [ $? -eq 0 ]; then
             echo "Dossier ${folder_to_mount} monté sur ${folders_local[$i-1]}."
         else
-            echo "Erreur : le dossier ${folder_to_mount} n'a pas pu être monté."
+            echo "${bold}Erreur :${reset} le dossier ${folder_to_mount} n'a pas pu être monté."
         fi
     fi
 done
