@@ -1,10 +1,10 @@
 [Unit]
 Description=Startup commands
-ConditionFileIsExecutable=/usr/local/bin/startup-commands
+ConditionFileIsExecutable=/usr/local/bin/pipemenu-startup-commands
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/startup-commands
+ExecStart=/usr/local/bin/pipemenu-startup-commands
 TimeoutSec=0
 StandardOutput=tty
 RemainAfterExit=no
