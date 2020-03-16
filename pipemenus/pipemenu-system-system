@@ -35,7 +35,11 @@ fi
 
 # Nom d'hôte (hostname)
 unset system_host
-system_host=$(hostname)
+if [ -e "${default_path}hostname" ]; then
+    system_host=$(hostname)
+else
+    system_host="$HOSTNAME"
+fi
 if [ ! -z "$system_host" ]; then
     is_system=1
     system_host=$(sanityse_output "$system_host")
@@ -44,11 +48,13 @@ fi
 
 # Domaine
 unset system_domain
-system_domain=$(dnsdomainname)
-if [ ! -z "$system_domain" ]; then
-    is_system=1
-    system_domain=$(sanityse_output "$system_domain")
-    echo "<item label=\"Domaine : $system_domain\" />"
+if [ -e "${default_path}dnsdomainname" ]; then
+    system_domain=$(dnsdomainname)
+    if [ ! -z "$system_domain" ]; then
+        is_system=1
+        system_domain=$(sanityse_output "$system_domain")
+        echo "<item label=\"Domaine : $system_domain\" />"
+    fi
 fi
 
 echo "<separator />"
