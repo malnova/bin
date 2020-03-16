@@ -2,7 +2,7 @@
 wifi_interface='wlp2s0' # Voir l'interface : ip link show
 
 # essid : https://github.com/baskerville/sutils
-/usr/local/bin/polybar/essid -s -i 3 -f '%s' -w $wifi_interface 2>&1 | while read essid; do
+essid -s -i 3 -f '%s' -w $wifi_interface 2>&1 | while read essid; do
     if [ -z "$essid" ]; then
         echo ''
     else
