@@ -1,5 +1,5 @@
 #!/bin/bash
-. default-commands
+. pipemenu-default-commands
 
 if [ -e "${default_path}dmidecode" ]; then
     ${default_path}dmidecode --type baseboard > ${scripts_path}pipemenu-system-hardware-dmidecode-baseboard
