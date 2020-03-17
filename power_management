@@ -78,20 +78,20 @@ if mkdir "$lock_dir" 2>/dev/null; then
 # Commande : systemctl hybrid-sleep
     if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
         locker_command="xidlehook --not-when-fullscreen
-            --timer 30
+            --timer 360
                 'xset dpms force off'
                 'xset -dpms'"
     elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
         locker_command="xidlehook --not-when-fullscreen
             --timer 180
-                'backlight -save; backlight -dim'
-                'backlight -restore'
+                'xset dpms force off'
+                'xset -dpms'
             --timer 10
                 'slock'
-                'backlight -restore'
+                'xset -dpms'
             --timer 10
                 'systemctl suspend'
-                'backlight -restore'"
+                'xset -dpms'"
     else
         file_path=$(realpath $0)
         dunstify -r 16384 -t 4000 "Erreur : le nom d'hôte $HOSTNAME est inconnu dans ${file_path}."
