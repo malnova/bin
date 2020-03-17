@@ -4,5 +4,15 @@
 # c'est que le module python-requests n'est pas installé.
 # Pour l'installer : sudo pacman -S python-requests
 # Cf. le bug : https://bugs.archlinux.org/task/57632
+bold=$(tput bold)
+reset=$(tput sgr0)
 
-sudo units_cur
+if [ "$EUID" -ne 0 ]; then
+    echo "${bold}Erreur :${reset} la mise à jour de units nécessite d'être lancée avec sudo."
+else
+    if units_cur; then
+        echo "units a été mis à jour."
+    else
+        echo "${bold}Erreur :${reset} units n'a pas pu être mis à jour."
+    fi
+fi

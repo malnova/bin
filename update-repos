@@ -1,3 +1,15 @@
-#!/bin/dash
+#!/bin/bash
+bold=$(tput bold)
+reset=$(tput sgr0)
 
-reflector --country 'France' --latest 50 --age 6 --sort rate --save /etc/pacman.d/mirrorlist
+if [ "$EUID" -ne 0 ]; then
+    echo "${bold}Erreur :${reset} la mise à jour des miroirs nécessite d'être lancée avec sudo."
+else
+    echo "Sauvegarde du fichier de miroirs de pacman dans /etc/pacman.d/mirrorlist.backup"
+    cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+    if reflector --country 'France' --latest 30 --age 6 --sort rate --save /etc/pacman.d/mirrorlist; then
+        echo "Les miroirs ont bien été mis à jour dans /etc/pacman.d/mirrorlist"
+    else
+        echo "${bold}Erreur :${reset} les miroirs n'ont pas pu être mis à jour."
+    fi
+fi
