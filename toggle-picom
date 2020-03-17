@@ -5,26 +5,28 @@ RESTART_ATTEMPTS=4
 forcekill_picom() {
     killall -q picom
     for (( i=0; i < RESTART_ATTEMPTS; i++ )); do
-        if [ ! "$(pidof picom)" ]; then
+        if ! pgrep -xu "$USER" "picom" &>/dev/null; then
             break
         fi
-        (( i == RESTART_ATTEMPTS - 1 )) && killall -q -S KILL picom
-        sleep 0.25
+        (( i == RESTART_ATTEMPTS - 1 )) && killall -q picom
+        sleep 0.5
     done
 }
 
-if [[ $1 = '--stop' ]]; then
-    if [ "$(pidof picom)" ]; then
-        forcekill_picom
-    fi
-elif [[ $1 = '--restart' ]]; then
-    if [ "$(pidof picom)" ]; then
-        forcekill_picom
-    fi
-    if [ -e "$binds_file" ]; then
+restart_picom() {
+    if [ -e "$picom_conf_file" ]; then
         picom --config $picom_conf_file &
     else
         picom &
+    fi
+}
+
+if [[ $1 = 'stop' ]]; then
+    forcekill_picom
+elif [[ $1 = 'restart' ]]; then
+    forcekill_picom
+    if ! pgrep -xu "$USER" "picom" &>/dev/null; then
+        restart_picom
     fi
 fi
 

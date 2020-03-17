@@ -1,8 +1,6 @@
 #!/bin/bash
 
-#
 # Use mkdir as an atomic operation to avoid multiple scripts running at once
-#
 lock_dir="/tmp/xrandrctl.exclusivelock"
 if mkdir "$lock_dir" 2>/dev/null; then
     trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15

@@ -1,5 +1,16 @@
 #!/bin/bash
-# Inspiré par le script "conkywonky"
+RESTART_ATTEMPTS=4
+
+forcekill_conky() {
+    killall -q conky
+    for (( i=0; i < RESTART_ATTEMPTS; i++ )); do
+        if ! pgrep -xu "$USER" "conky" &>/dev/null; then
+            break
+        fi
+        (( i == RESTART_ATTEMPTS - 1 )) && killall -q conky
+        sleep 0.5
+    done
+}
 
 restart_conky(){
     if [ -e "$HOME/.config/conky/" ]; then
@@ -15,15 +26,15 @@ restart_conky(){
     else
         conky -q
     fi
-    exit
 }
 
-if [ "$(pidof conky)" ]; then
-    killall -q conky
-    sleep 1
-    restart_conky
-    exit
-else
-    restart_conky
-    exit
+if [[ $1 = 'stop' ]]; then
+    forcekill_conky
+elif [[ $1 = 'restart' ]]; then
+    forcekill_conky
+    if ! pgrep -xu "$USER" "conky" &>/dev/null; then
+        restart_conky
+    fi
 fi
+
+exit 0
