@@ -31,22 +31,16 @@
 # désactive le mode en question. Exemple : xset dpms 180 0 300
 # Pour forcer la mise en veille (OU l'hibernation OU l'arrêt immédiat)
 # de l'écran : xset dpms force standby (OU suspend OU off)
-# Éteindre l'écran entraîne aussi le verrouillage de la session !
+#
+# Activer DPMS ou l'économiseur d'écran entraîne aussi le verrouillage
+# de la session !
 #
 lock_dir="/tmp/locker.exclusivelock"
 if mkdir "$lock_dir" 2>/dev/null; then
     trap 'rm -rf "$lock_dir"; exit' 0 1 2 3 13 15
     if [ "$1" = "start" ]; then
-        # Réglage de DPMS (pour activation possible avec C-A-s) et désactivation
-        if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
-            (sleep 2 && xset dpms 0 0 330 && xset -dpms) &
-        elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
-            (sleep 2 && xset dpms 0 0 180 && xset -dpms) &
-        else
-            file_path=$(realpath $0)
-            dunstify -r 16384 -t 4000 "Erreur : le nom d'hôte $HOSTNAME est inconnu dans ${file_path}."
-            exit 1
-        fi
+        # Désactiver DPMS
+        (sleep 2 && xset dpms 0 0 0 && xset -dpms) &
         # Désactiver l'économiseur d'écran (écran noir)
         (sleep 2 && xset s off) &
     fi
@@ -83,14 +77,10 @@ if mkdir "$lock_dir" 2>/dev/null; then
 # 3. Suspend to both :
 # Commande : systemctl hybrid-sleep
     if [ "$HOSTNAME" = "ORDIBUREAU" ]; then
-        # Le verrouillage de lightdm (avec dm-tool ou light-locker-command)
-        # entraîne aussi l'extinction de l'écran !
-        # "dm-tool lock" ou "light-locker-command -l" semblent empêcher
-        # "systemctl poweroff" de fonctionner.
         locker_command="xidlehook --not-when-fullscreen
-            --timer 360
-                'dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.SetActive boolean:true'
-                ''"
+            --timer 30
+                'xset dpms force off'
+                'xset -dpms'"
     elif [ "$HOSTNAME" = "ORDIPORTABLE" ]; then
         locker_command="xidlehook --not-when-fullscreen
             --timer 180
