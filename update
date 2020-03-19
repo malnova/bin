@@ -76,12 +76,14 @@ done <<< "$( /usr/bin/pacman -Qtdq )"
 
 # Nettoyage du cache de pacman (dans /var/cache/pacman/pkg/)
 if command -v /usr/bin/paccache >/dev/null 2>&1; then
-    # Supprimer les fichiers du cache de pacman correspondant à des paquets non installés
-    /usr/bin/sudo /usr/bin/paccache --remove --uninstalled --keep 0 1>/dev/null
-    # Conserver seulement 1 archive pour les paquets installés (ne laisser
-    # que 2 fichiers par paquet dans le cache de pacman : la version actuelle
-    # + la version précédente)
-    /usr/bin/sudo /usr/bin/paccache --remove --keep 2 1>/dev/null
+    if [ "$EUID" -eq 0 ]; then
+        # Supprimer les fichiers du cache de pacman correspondant à des paquets non installés
+        /usr/bin/paccache --remove --uninstalled --keep 0 1>/dev/null
+        # Conserver seulement 1 archive pour les paquets installés (ne laisser
+        # que 2 fichiers par paquet dans le cache de pacman : la version actuelle
+        # + la version précédente)
+        /usr/bin/paccache --remove --keep 2 1>/dev/null
+    fi
 else
     echo -e "${bold}${yellow}Le paquet pacman-contrib (fournissant la commande paccache) n'est pas installé. Le nettoyage du cache de pacman ne peut être effectué.${nocolor}${reset}"
 fi
