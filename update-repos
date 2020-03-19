@@ -4,21 +4,21 @@ bold=$(tput bold)
 reset=$(tput sgr0)
 
 if [ "$EUID" -ne 0 ]; then
-    echo "${bold}Erreur :${reset} la mise à jour des miroirs nécessite d'être lancée avec sudo."
+    echo "${bold}Erreur :$reset la mise à jour des miroirs nécessite d'être lancée avec sudo."
 else
     echo -n "Sauvegarde du fichier de miroirs de pacman dans ${mirror_file}.backup..."
-    echo "# Sauvegarde effectuée le $(date +'%a %d %B %Y')" > "${mirror_file}.backup"
-    cat "$mirror_file" >> "${mirror_file}.backup" 2>/dev/null
-    if [ $? -eq 0 ]; then
-        echo " Fait."
+    if [ -w "${mirror_file}.backup" ]; then
+        echo "# Sauvegarde effectuée le $(date +'%a %d %B %Y')" > "${mirror_file}.backup"
+        cat "$mirror_file" >> "${mirror_file}.backup" 2>/dev/null
+        echo " ${bold}Fait.$reset"
         echo -n "Mise à jour des miroirs dans ${mirror_file}..."
         echo "# Liste de miroirs générée le $(date +'%a %d %B %Y')" > "$mirror_file"
-        if curl -s "https://www.archlinux.org/mirrorlist/?country=FR&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | rankmirrors -n 5 - >> "$mirror_file"; then
-            echo " Fait."
+        if curl -s "https://www.archlinux.org/mirrorlist/?country=FR&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | rankmirrors -n 10 - >> "$mirror_file"; then
+            echo " ${bold}Fait.$reset"
         else
-            echo -e "\n${bold}Erreur :${reset} les miroirs n'ont pas pu être mis à jour."
+            echo -e "\n${bold}Erreur :$reset les miroirs n'ont pas pu être mis à jour."
         fi
     else
-        echo -e "\n${bold}Erreur :${reset} sauvegarde impossible. Opération annulée."
+        echo -e "\n${bold}Erreur :$reset sauvegarde impossible. Opération annulée."
     fi
 fi
