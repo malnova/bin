@@ -22,9 +22,10 @@ fi
 if [ -e "/usr/bin/gkbd-keyboard-display" ]; then
     # Nécessite l'application gkbd-keyboard-display installée par
     # le paquet libgnomekbd
+    echo "keyboard_layout : $keyboard_layout ; keyboard_variant : $keyboard_variant"
     if [ -z "$keyboard_variant" ]; then
-        $(/usr/bin/gkbd-keyboard-display -l ${keyboard_layout}$)
+        $(/usr/bin/gkbd-keyboard-display -l $keyboard_layout)
     else
-        $(/usr/bin/gkbd-keyboard-display -l ${keyboard_layout}$'\t'${keyboard_variant})
+        $(/usr/bin/gkbd-keyboard-display -l ${keyboard_layout}$'\t'$keyboard_variant)
     fi
 fi

@@ -10,8 +10,8 @@ if [ -e "/usr/bin/xkblayout-state" ]; then
     keyboard_layout=$(/usr/bin/xkblayout-state print "%s")
     keyboard_variant=$(/usr/bin/xkblayout-state print "%v")
     if [ -z "$keyboard_variant" ]; then
-        dunstify -r 8192 -t 2000 "Clavier : ${keyboard_layout}"
+        dunstify -r 8192 -t 2000 "Clavier : $keyboard_layout"
     else
-        dunstify -r 8192 -t 2000 "Clavier : ${keyboard_layout} (${keyboard_variant})"
+        dunstify -r 8192 -t 2000 "Clavier : $keyboard_layout ($keyboard_variant)"
     fi
 fi
