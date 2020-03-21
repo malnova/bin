@@ -1,4 +1,8 @@
 #!/bin/bash
+# Changer la disposition du clavier.
+# Permet de passer d'une disposition à l'autre parmi celles définies
+# dans le fichier /etc/X11/xorg.conf.d/00-keyboard.conf
+# Le raccourci clavier est défini dans .config/openbox/rc.xml
 
 unset keyboard_layout keyboard_variant
 if [ -e "/usr/bin/xkblayout-state" ]; then
