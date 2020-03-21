@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 . pipemenu-system-functions
 
 echo "<openbox_pipe_menu>"
@@ -26,4 +26,3 @@ fi
 echo "<menu execute=\"${scripts_path}pipemenu-system-network-ip-wan\" id=\"system-network-ip-wan\" label=\"Adresse IP publique\" />"
 
 echo "</openbox_pipe_menu>"
-exit 0

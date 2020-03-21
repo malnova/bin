@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 
 echo "<openbox_pipe_menu>"
 
@@ -27,4 +27,3 @@ if [ -e "${default_path}sensors" ]; then
 fi
 
 echo "</openbox_pipe_menu>"
-exit 0

@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 
 echo "<openbox_pipe_menu>"
 
@@ -83,4 +83,3 @@ echo "<item label=\"Afficher un aperçu (hwinfo)\"><action name=\"Execute\"><com
 echo "<item label=\"Afficher un résumé du matériel\"><action name=\"Execute\"><command>${scripts_path}pipemenu-system-hardware-summary</command></action></item>"
 
 echo "</openbox_pipe_menu>"
-exit 0

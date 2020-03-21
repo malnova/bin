@@ -36,5 +36,3 @@ elif [[ $1 = 'restart' ]]; then
         restart_conky
     fi
 fi
-
-exit 0

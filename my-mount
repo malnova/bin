@@ -28,7 +28,7 @@ credentials_files_length=${#credentials_files[@]}
 folders_local_length=${#folders_local[@]}
 folders_remote_length=${#folders_remote[@]}
 if [ "$credentials_files_length" != "$folders_local_length" ] || [ "$credentials_files_length" != "$folders_remote_length" ]; then
-    echo "${bold}Erreur :${reset} les fichiers d'identification et les dossiers locaux et distants ne correspondent pas."
+    echo "${bold}Erreur :$reset les fichiers d'identification et les dossiers locaux et distants ne correspondent pas."
     exit
 fi
 
@@ -36,7 +36,7 @@ syntax="nas-mount [-u nom_utilisateur] [-p mot_de_passe] [1 ou 1,2...]\n  Dossie
 
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo -e "$syntax"
-    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+    for (( i=1; i<$folders_remote_length+1; i++ )); do
         echo "    $i : ${folders_remote[$i-1]}"
     done
     exit
@@ -71,13 +71,13 @@ fi
 
 if [ -z "$folder" ]; then
     echo -e "Dossiers (* indique un dossier déjà monté) :\n    t ou T : tous les dossiers"
-    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+    for (( i=1; i<$folders_remote_length+1; i++ )); do
         if mount | grep "${folders_remote[$i-1]}" >/dev/null; then
             is_mounted=" *"
         else
             is_mounted=""
         fi
-        echo "    $i : ${folders_remote[$i-1]}${is_mounted}"
+        echo "    $i : ${folders_remote[$i-1]}$is_mounted"
     done
     echo "    Entrée : quitter sans effectuer de montage"
     read -p "Dossier(s) à monter (ex. 1 ou 1,2...) : " folder
@@ -88,21 +88,21 @@ if [ -z "$folder" ]; then
 fi
 
 if [ "$folder" == "t" ] || [ "$folder" == "T" ]; then
-    for (( i=1; i<${folders_remote_length}+1; i++ )); do
+    for (( i=1; i<$folders_remote_length+1; i++ )); do
         if [ "$i" -gt "1" ]; then
             folders="${folders},"
         fi
-        folders="${folders}${i}"
+        folders="$folders$i"
     done
-    folder="${folders}"
+    folder="$folders"
 fi
 
 if [[ "$folder" =~ "," ]]; then
     IFS=',' read -r -a folders <<< "$folder"
 elif [ ! -z "$folder" ]; then
-    folders=("${folder}")
+    folders=("$folder")
 else
-    echo "${bold}Erreur :${reset} aucun dossier à monter."
+    echo "${bold}Erreur :$reset aucun dossier à monter."
     exit
 fi
 
@@ -111,49 +111,47 @@ for i in "${folders[@]}"; do
     if [[ $i =~ ^[0-9]+$ ]] && [ "$i" -ge "1" ] && [ "$i" -le "$folders_remote_length" ]; then
         folder_to_mount="${folders_remote[$i-1]}"
     else
-        echo "${bold}Erreur :${reset} $i n'est pas un choix de dossier valide."
+        echo "${bold}Erreur :$reset $i n'est pas un choix de dossier valide."
         continue
     fi
     if [ ! -d "${folders_local[$i-1]}" ]; then
-        echo "${bold}Erreur :${reset} ${folders_local[$i-1]} n'existe pas ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        echo "${bold}Erreur :$reset ${folders_local[$i-1]} n'existe pas ; le dossier $folder_to_mount n'a pas pu être monté."
         continue
     fi
     if [ -L "${folders_local[$i-1]}" ]; then
-        echo "${bold}Erreur :${reset} ${folders_local[$i-1]} est un lien symbolique ; le dossier ${folder_to_mount} n'a pas pu être monté."
+        echo "${bold}Erreur :$reset ${folders_local[$i-1]} est un lien symbolique ; le dossier $folder_to_mount n'a pas pu être monté."
         continue
     fi
     if mount | grep "${folder_to_mount}" >/dev/null; then
-        folder_mountpoint=$(mount | grep "${folder_to_mount}" | tail -1 | awk '{ print $3 }')
-        echo "Le dossier ${folder_to_mount} est déjà monté sur ${folder_mountpoint}."
+        folder_mountpoint=$(mount | grep "$folder_to_mount" | tail -1 | awk '{ print $3 }')
+        echo "Le dossier $folder_to_mount est déjà monté sur ${folder_mountpoint}."
     else
         if [ ! -z "$(ls -A ${folders_local[$i-1]})" ]; then
-            echo "${bold}Erreur :${reset} ${folders_local[$i-1]} n'est pas vide ; le dossier ${folder_to_mount} ne sera pas monté."
+            echo "${bold}Erreur :$reset ${folders_local[$i-1]} n'est pas vide ; le dossier $folder_to_mount ne sera pas monté."
             continue
         fi
         if sudo test ! -f "${credentials_files[$i-1]}"; then
             if [ -z "$uservar" ]; then
-                read -p "${bold}Nom d'utilisateur${reset} pour le montage de ${folder_to_mount} : " uservar
+                read -p "${bold}Nom d'utilisateur$reset pour le montage de $folder_to_mount : " uservar
             fi
             if [ -z "$passvar" ]; then
-                read -sp "${bold}Mot de passe${reset} pour le montage de ${folder_to_mount} : " passvar
+                read -sp "${bold}Mot de passe$reset pour le montage de $folder_to_mount : " passvar
                 echo
             fi
         fi
         if ([ ! -z "$uservar" ] && [ ! -z "$passvar" ]); then
-            mount_options="user=${uservar},password=${passvar},${mount_options}"
+            mount_options="user=${uservar},password=${passvar},$mount_options"
         elif sudo test -f "${credentials_files[$i-1]}"; then
-            mount_options="credentials=${credentials_files[$i-1]},${mount_options}"
+            mount_options="credentials=${credentials_files[$i-1]},$mount_options"
         else
-            echo "${bold}Problème de données d'identification :${reset} impossible d'effectuer le montage demandé."
+            echo "${bold}Problème de données d'identification :$reset impossible d'effectuer le montage demandé."
             exit
         fi
-        $(sudo mount -t cifs "${folder_to_mount}" "${folders_local[$i-1]}" -o "${mount_options}")
+        $(sudo mount -t cifs "$folder_to_mount" "${folders_local[$i-1]}" -o "$mount_options")
         if [ $? -eq 0 ]; then
-            echo "Dossier ${folder_to_mount} monté sur ${folders_local[$i-1]}."
+            echo "Dossier $folder_to_mount monté sur ${folders_local[$i-1]}."
         else
-            echo "${bold}Erreur :${reset} le dossier ${folder_to_mount} n'a pas pu être monté."
+            echo "${bold}Erreur :$reset le dossier $folder_to_mount n'a pas pu être monté."
         fi
     fi
 done
-
-exit 0

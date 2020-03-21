@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 
 binds_file="$HOME/.config/binds.list"
 
@@ -48,4 +48,3 @@ echo "<action name=\"Execute\"><command>$(edit_file $binds_file)</command></acti
 echo "</item>"
 
 echo "</openbox_pipe_menu>"
-exit 0

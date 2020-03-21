@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 . pipemenu-system-functions
 
 echo "<openbox_pipe_menu>"
@@ -69,4 +69,3 @@ if [ -z "$is_board" ]; then
 fi
 
 echo "</openbox_pipe_menu>"
-exit 0

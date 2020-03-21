@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 . pipemenu-system-functions
 
 summary_file="${HOME}/.cache/pipemenu-system-hardware-summary.txt"
@@ -255,5 +255,3 @@ summary_str="${summary_str}${summary_local_str}"
 # Création du fichier et affichage
 echo -e "${summary_str}" > "${summary_file}"
 $(direct_edit_file "${summary_file}")
-
-exit 0

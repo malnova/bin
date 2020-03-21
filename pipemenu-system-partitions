@@ -1,5 +1,5 @@
 #!/bin/bash
-. pipemenu-default-commands
+. default-commands
 . pipemenu-system-functions
 
 echo "<openbox_pipe_menu>"
@@ -27,4 +27,3 @@ echo "<item label=\"Afficher les UUIDs\"><action name=\"Execute\"><command>$(dis
 echo "<item label=\"Afficher toutes les partitions\"><action name=\"Execute\"><command>$(display_file "${default_path}df -h --output=source,fstype,size,used,avail,pcent,file,target")</command></action></item>"
 
 echo "</openbox_pipe_menu>"
-exit 0

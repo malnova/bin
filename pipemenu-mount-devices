@@ -139,4 +139,3 @@ else
 fi
 
 echo "</openbox_pipe_menu>"
-exit 0
