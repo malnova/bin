@@ -1,5 +1,5 @@
 #!/bin/bash
-. default-commands
+. pipemenu-default-commands
 . pipemenu-system-functions
 
 summary_file="${HOME}/.cache/pipemenu-system-hardware-summary.txt"

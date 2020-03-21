@@ -1,5 +1,5 @@
 #!/bin/bash
-. default-commands
+. pipemenu-default-commands
 . pipemenu-system-functions
 
 echo "<openbox_pipe_menu>"

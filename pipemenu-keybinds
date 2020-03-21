@@ -1,5 +1,5 @@
 #!/bin/bash
-. default-commands
+. pipemenu-default-commands
 
 binds_file="$HOME/.config/binds.list"
 
