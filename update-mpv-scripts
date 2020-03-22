@@ -8,20 +8,24 @@ nocolor='\033[0m'
 
 # Fonction de vérification des mises à jour
 check_if_new () {
-    if [ -f $1 ]; then
-        remote_file_content=$(curl -LSs "$2")
-        DIFF=$(diff <(cat "$1") <(echo "$remote_file_content"))
-        if [ "$DIFF" != "" ]; then
-            echo "$remote_file_content" > "$1"
-            echo -e "${bold}${yellow}$1 --> mis à jour.${nocolor}${nobold}"
+    if curl --output /dev/null --silent --head --fail "$2"; then
+        if [ -f $1 ]; then
+            remote_file_content=$(curl -LSs "$2")
+            DIFF=$(diff <(cat "$1") <(echo "$remote_file_content"))
+            if [ "$DIFF" != "" ]; then
+                echo "$remote_file_content" > "$1"
+                echo -e "${bold}${yellow}$1 --> mis à jour.${nocolor}${nobold}"
+            else
+                echo "$1 --> déjà à jour."
+            fi
+            unset remote_file_content DIFF
         else
-            echo "$1 --> déjà à jour."
+            echo -e "${bold}${yellow}$1 --> le fichier n'existe pas. Il va être créé.${nocolor}${nobold}"
+            curl -LSso "$1" "$2"
+            echo -e "${bold}${yellow}Fichier créé.${nocolor}${nobold}"
         fi
-        unset remote_file_content DIFF
     else
-        echo -e "${bold}${yellow}$1 --> le fichier n'existe pas. Il va être créé.${nocolor}${nobold}"
-        curl -LSso "$1" "$2"
-        echo -e "${bold}${yellow}Fichier créé.${nocolor}${nobold}"
+        echo -e "${bold}${yellow}$1 --> le fichier distant n'existe plus à l'adresse $2 !${nocolor}${nobold}"
     fi
 }
 
@@ -52,7 +56,7 @@ if [ -d "${SCRIPTS_DIR}" ]; then
     # avec plusieurs commandes même quand certaines sont identiques,
     # par exemple pour changer le style des sous-titres
     local_file="${SCRIPTS_DIR}/cycle-commands.lua"
-    remote_file="https://raw.githubusercontent.com/CogentRedTester/my-mpv-settings/master/scripts/cycle-commands.lua"
+    remote_file="https://raw.githubusercontent.com/CogentRedTester/mpv-scripts/78c6841c82e63423f00272c04cb3062531551ede/cycle-commands.lua"
     check_if_new "$local_file" "$remote_file"
 
     # Script mpv_crop_script pour capture d'écran avec recadrage
