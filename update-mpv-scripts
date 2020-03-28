@@ -56,7 +56,7 @@ if [ -d "${SCRIPTS_DIR}" ]; then
     # avec plusieurs commandes même quand certaines sont identiques,
     # par exemple pour changer le style des sous-titres
     local_file="${SCRIPTS_DIR}/cycle-commands.lua"
-    remote_file="https://raw.githubusercontent.com/CogentRedTester/mpv-scripts/78c6841c82e63423f00272c04cb3062531551ede/cycle-commands.lua"
+    remote_file="https://raw.githubusercontent.com/CogentRedTester/mpv-scripts/master/cycle-commands.lua"
     check_if_new "$local_file" "$remote_file"
 
     # Script mpv_crop_script pour capture d'écran avec recadrage
