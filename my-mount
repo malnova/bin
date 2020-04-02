@@ -158,7 +158,6 @@ for i in "${folders[@]}"; do
         if [ ! -z "${folders_mount_options[$i-1]}" ]; then
             folder_options="${folder_options},${folders_mount_options[$i-1]}"
         fi
-        echo "mount_options : @@@ $folder_options @@@"
         $(sudo mount -t cifs "$folder_to_mount" "${folders_local[$i-1]}" -o "$folder_options")
         if [ $? -eq 0 ]; then
             echo "Dossier $folder_to_mount monté sur ${folders_local[$i-1]}."
