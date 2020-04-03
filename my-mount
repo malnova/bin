@@ -22,13 +22,13 @@ declare -a folders_local=("/mnt/NAS/Documents" "/mnt/NAS/Images" "/mnt/NAS/Musiq
 declare -a folders_remote=("//192.168.1.50/Documents" "//192.168.1.50/Images" "//192.168.1.50/Musique" "//192.168.1.50/Videos" "//192.168.1.6/sanfix")
 
 # Options de montage globales (ajoutées pour tous les dossiers)
-# En cas d'erreur de montage (mount error(95) : Operation not supported",
-# supprimer ou ajouter (à tester) "vers=1.0" ou "vers=2.0".
 mount_options="iocharset=utf8,noperm"
 
 # Options de montage spécifiques (à séparer par des virgules comme pour
 # les options de montage globales).
 # !!! Elles doivent correspondre aux dossiers à monter DANS LE MÊME ORDRE !!!
+# En cas d'erreur de montage (mount error(95) : Operation not supported",
+# supprimer ou ajouter (à tester) "vers=1.0" ou "vers=2.0".
 declare -a folders_mount_options=("vers=1.0" "vers=1.0" "vers=1.0" "vers=1.0" "")
 
 credentials_files_length=${#credentials_files[@]}
