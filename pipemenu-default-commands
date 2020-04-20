@@ -10,7 +10,7 @@ scripts_path="/usr/local/bin/"
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour éditer un fichier
 function edit_file() {
-    echo "${default_path}urxvt -e ${default_path}bash -l -c \"${scripts_path}tmux new-session ${default_path}vim ${1}\""
+    echo "${default_path}urxvt -e ${default_path}bash -l -c \"${scripts_path}tmux new-session ${default_path}nvim ${1}\""
 }
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour lister le contenu d'un fichier
@@ -25,7 +25,7 @@ function display_file() {
 
 # Ouvrir un terminal pour éditer un fichier
 function direct_edit_file() {
-    ${default_path}urxvt -e ${default_path}bash -l -c "${scripts_path}tmux new-session ${default_path}vim ${1}"
+    ${default_path}urxvt -e ${default_path}bash -l -c "${scripts_path}tmux new-session ${default_path}nvim ${1}"
 }
 
 # Ouvrir un terminal pour comparer deux fichiers
