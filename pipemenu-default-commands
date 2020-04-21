@@ -10,20 +10,20 @@ scripts_path="/usr/local/bin/"
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour éditer un fichier
 function edit_file() {
-    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 &gt; /dev/null 2&gt;&amp;1; ${scripts_path}tmux new-session ${default_path}nvim ${1}\""
+    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 > /dev/null 2>&amp;1; ${scripts_path}tmux new-session ${default_path}nvim ${1}\""
 }
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour lister le contenu d'un fichier
 function cat_file() {
-    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 &gt; /dev/null 2&gt;&amp;1; ${default_path}cat ${1} | ${default_path}less\""
+    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 > /dev/null 2>&amp;1; ${default_path}cat ${1} | ${default_path}less\""
 }
 
 # Écrire d'ouvrir un terminal pour y lancer un programme
 function display_file() {
-    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 &gt; /dev/null 2&gt;&amp;1; ${1} | ${default_path}less\""
+    echo "${default_path}urxvt -e ${default_path}bash -l -c \"sleep .05; ${default_path}transset-df -a 0.85 > /dev/null 2>&amp;1; ${1} | ${default_path}less\""
 }
 
 # Ouvrir un terminal pour éditer un fichier
 function direct_edit_file() {
-    ${default_path}urxvt -e ${default_path}bash -l -c "sleep .05; ${default_path}transset-df -a 0.85 &gt; /dev/null 2&gt;&amp;1; ${scripts_path}tmux new-session ${default_path}nvim ${1}"
+    ${default_path}urxvt -e ${default_path}bash -l -c "sleep .05; ${default_path}transset-df -a 0.85 > /dev/null 2>&amp;1; ${scripts_path}tmux new-session ${default_path}nvim ${1}"
 }
