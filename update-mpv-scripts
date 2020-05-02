@@ -59,11 +59,6 @@ if [ -d "${SCRIPTS_DIR}" ]; then
     remote_file="https://raw.githubusercontent.com/CogentRedTester/mpv-scripts/master/cycle-commands.lua"
     check_if_new "$local_file" "$remote_file"
 
-    # Script mpv_crop_script pour capture d'écran avec recadrage
-    local_file="${SCRIPTS_DIR}/mpv_crop_script.lua"
-    remote_file="https://github.com/TheAMM/mpv_crop_script/releases/latest/download/mpv_crop_script.lua"
-    check_if_new "$local_file" "$remote_file"
-
     # Script cycle-video_rotate pour des rotations cohérentes
     local_file="${SCRIPTS_DIR}/cycle-video-rotate.lua"
     remote_file="https://raw.githubusercontent.com/VideoPlayerCode/mpv-tools/master/scripts/cycle-video-rotate.lua"
