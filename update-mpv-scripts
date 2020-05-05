@@ -47,10 +47,6 @@ if [ -d "${SCRIPTS_DIR}" ]; then
     local_file="${SCRIPTS_DIR}/playlistmanager.lua"
     remote_file="https://raw.githubusercontent.com/jonniek/mpv-playlistmanager/master/playlistmanager.lua"
     check_if_new "$local_file" "$remote_file"
-    # titleresolver.lua est une dépendance optionnelle de playlistmanager.lua
-    local_file="${SCRIPTS_DIR}/titleresolver.lua"
-    remote_file="https://raw.githubusercontent.com/jonniek/mpv-playlistmanager/master/titleresolver.lua"
-    check_if_new "$local_file" "$remote_file"
 
     # Script cycle-commands pour permettre de définir des raccourcis
     # avec plusieurs commandes même quand certaines sont identiques,
