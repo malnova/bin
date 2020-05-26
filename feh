@@ -1,3 +1,3 @@
 #!/bin/bash
 
-/usr/bin/feh --auto-rotate --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" "$@"
+/usr/bin/feh --auto-rotate --edit --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" "$@"
