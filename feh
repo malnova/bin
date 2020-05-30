@@ -3,4 +3,4 @@
 # .config/feh/keys (nécessite xclip, puisque xsel n'est pas compatible
 # avec les images).
 
-/usr/bin/feh --auto-rotate --edit --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" -A 'filetype=$(file -b --mime-type %F) && xclip -selection clipboard -t $filetype -i %F' "$@"
+/usr/bin/feh --auto-rotate --edit --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" -A ';filetype=$(file -b --mime-type %F) && xclip -selection clipboard -t $filetype -i %F' "$@"
