@@ -5,4 +5,4 @@
 # Commencer l'action par un point-virgule permet de recharger l'image
 # active au lieu de passer à l'image suivante.
 
-/usr/bin/feh --auto-rotate --edit --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" -A ';filetype=$(file -b --mime-type %F) && xclip -selection clipboard -t $filetype -i %F' "$@"
+/usr/bin/feh --auto-rotate --draw-tinted --edit --scale-down --title "%n (%wx%h, %S - zoom %z) - feh [%u/%l]" --thumb-title "%n (%wx%h, %S - zoom %z) - feh" --action ';filetype=$(file -b --mime-type %F) && xclip -selection clipboard -t $filetype -i %F' --info ';fullpath=$(realpath %F) && echo "${fullpath}\n(%u sur %l)"' "$@"
