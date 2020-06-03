@@ -55,17 +55,6 @@ eval $update_command
 # Récpuérer la partie du log de pacman correspondant à la dernière mise à jour
 pacman_log=$(sed -n -e "/\[$run_date.*\] \[PACMAN\] Running '.*pacman.*'/,\${/.*/p}" "$pacman_log")
 
-# Si des paquets ont été mis à jour, vérifier si des processus doivent
-# être relancés
-is_upgraded=$(echo "$pacman_log" | grep ' upgraded ')
-if [ "x$is_upgraded" != "x" ]; then
-    if command -v /usr/bin/needrestart >/dev/null 2>&1; then
-        /usr/bin/needrestart
-    else
-        echo -e "${bold}${yellow}Le paquet needrestart (dans AUR) n'est pas installé. La vérification des processus en cours est impossible.${nocolor}${reset}"
-    fi
-fi
-
 # Vérifier si certains paquets sont orphelins
 while read -r line; do
     has_deps=$( /usr/bin/pacman -Rcsp "$line" | wc -l )
