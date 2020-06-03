@@ -105,6 +105,19 @@ if [ ! -z "$system_version" ]; then
     echo "<item label=\"Version : $system_version\" />"
 fi
 
+# Date d'installation
+unset system_date
+if [ -e "/var/log/pacman.log" ]; then
+    unset system_date
+    system_date=$(sed -n "/ installed $1/{s/].*/]/p;q}" /var/log/pacman.log | tr -d '[]')
+    system_date=$(TZ=CET date -d "$system_date" +'%d %b %Y')
+    if [ ! -z "$system_date" ]; then
+        is_system=1
+        system_date=$(sanityse_output "$system_date")
+        echo "<item label=\"Date d'installation : $system_date\" />"
+    fi
+fi
+
 # Version du noyau (kernel)
 unset system_kernel
 system_kernel=$(${default_path}uname -r)
