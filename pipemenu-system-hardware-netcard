@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         netcard_connector[$netcard_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
         if [ ! -z "${netcard_connector[$netcard_nb]}" ]; then
             is_netcard=1
-            netcard_connector[$netcard_nb]=$(sanityse_output "${netcard_connector[$netcard_nb]}")
+            netcard_connector[$netcard_nb]=$(sanitize_output "${netcard_connector[$netcard_nb]}")
             if [ "$netcard_nb" -eq 0 ] || [ "${netcard_connector[$netcard_nb]}" != "${netcard_connector[$netcard_nb-1]}" ]; then
                 echo "<separator label=\"Port ${netcard_connector[netcard_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         netcard_model=$(str_str "$line" "Model:")
         if [ ! -z "$netcard_model" ]; then
             is_netcard=1
-            netcard_model=$(sanityse_output "$netcard_model")
+            netcard_model=$(sanitize_output "$netcard_model")
             echo "<item label=\"Modèle : $netcard_model\" />"
             ((z++))
         fi
@@ -37,7 +37,7 @@ if [ -e "${default_path}hwinfo" ]; then
         netcard_vendor=$(str_str "$line" "Vendor:")
         if [ ! -z "$netcard_vendor" ]; then
             is_netcard=1
-            netcard_vendor=$(sanityse_output_with_quotes "$netcard_vendor")
+            netcard_vendor=$(sanitize_output_with_quotes "$netcard_vendor")
             echo "<item label=\"Fabricant : $netcard_vendor\" />"
             ((z++))
         fi
@@ -45,19 +45,19 @@ if [ -e "${default_path}hwinfo" ]; then
         netcard_device_file=$(str_str "$line" "Device File:")
         if [ ! -z "$netcard_device_file" ]; then
             is_netcard=1
-            netcard_device_file=$(sanityse_output "$netcard_device_file")
+            netcard_device_file=$(sanitize_output "$netcard_device_file")
             unset netcard_nm_properties netcard_type netcard_state
             if [ -e "${default_path}nmcli" ]; then
                 netcard_nm_properties=$(${default_path}nmcli -f GENERAL,WIFI-PROPERTIES dev show $netcard_device_file)
                 if [ ! -z "$netcard_nm_properties" ]; then
                     netcard_type=$(echo "$netcard_nm_properties" | sed -n -e 's/^GENERAL.TYPE://p')
                     if [ ! -z "$netcard_type" ]; then
-                        netcard_type=$(sanityse_output "$netcard_type")
+                        netcard_type=$(sanitize_output "$netcard_type")
                         echo "<item label=\"Type : $netcard_type\" />"
                     fi
                     netcard_state=$(echo "$netcard_nm_properties" | sed -n -e 's/^GENERAL.STATE://p')
                     if [ ! -z "$netcard_state" ]; then
-                        netcard_state=$(sanityse_output "$netcard_state")
+                        netcard_state=$(sanitize_output "$netcard_state")
                         echo "<item label=\"État : $netcard_state\" />"
                     fi
                 fi
@@ -78,7 +78,7 @@ if [ -e "${default_path}hwinfo" ]; then
                         netcard_frequencies="5 GHz (2,4 GHz non disponible)"
                     fi
                     if [ ! -z "$netcard_frequencies" ]; then
-                        netcard_frequencies=$(sanityse_output "$netcard_frequencies")
+                        netcard_frequencies=$(sanitize_output "$netcard_frequencies")
                         echo "<item label=\"Spectre de radiofréquences : $netcard_frequencies\" />"
                     fi
                 fi
@@ -89,11 +89,11 @@ if [ -e "${default_path}hwinfo" ]; then
                     netcard_frequency=$(echo $netcard_iwconfig | grep -oP '(?<=Frequency:)[0-9.,]+ GHz')
                     netcard_speed=$(echo $netcard_iwconfig | grep -oP '(?<=Bit Rate=)[0-9.,]+ Mb/s')
                     if [ ! -z "$netcard_frequency" ]; then
-                        netcard_frequency=$(sanityse_output "$netcard_frequency")
+                        netcard_frequency=$(sanitize_output "$netcard_frequency")
                         echo "<item label=\"Fréquence : $netcard_frequency\" />"
                     fi
                     if [ ! -z "$netcard_speed" ]; then
-                        netcard_speed=$(sanityse_output "$netcard_speed")
+                        netcard_speed=$(sanitize_output "$netcard_speed")
                         echo "<item label=\"Vitesse : $netcard_speed\" />"
                     fi
                 fi
@@ -101,7 +101,7 @@ if [ -e "${default_path}hwinfo" ]; then
             if [ -z "$netcard_speed" ]; then
                 netcard_speed=$(cat /sys/class/net/${netcard_device_file}/speed 2>/dev/null)
                 if [ ! -z "$netcard_speed" ]; then
-                    netcard_speed=$(sanityse_output "$netcard_speed")
+                    netcard_speed=$(sanitize_output "$netcard_speed")
                     if [[ $netcard_speed =~ ^[0-9]+$ ]]; then
                         netcard_speed=$(echo "${netcard_speed} Mbps")
                     fi
@@ -112,7 +112,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset netcard_driver
         netcard_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$netcard_driver" ]; then
-            netcard_driver=$(sanityse_output "$netcard_driver")
+            netcard_driver=$(sanitize_output "$netcard_driver")
         fi
         unset netcard_driver_status_all
         netcard_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -123,22 +123,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     netcard_driver_status=$(echo "$netcard_driver_status,$driver_new")
                     netcard_status=$(echo "$netcard_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     netcard_driver_status=$(echo "$netcard_driver_status,$driver_new")
                     netcard_status=$(echo "$netcard_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     netcard_driver_status=$(echo "$netcard_driver_status,$driver_new")
                     netcard_status=$(echo "$netcard_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     netcard_driver_status=$(echo "$netcard_driver_status,$driver_new")
                     netcard_status=$(echo "$netcard_status,$driver_new inactifs")
                 fi
@@ -149,7 +149,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset netcard_driver_modules
         netcard_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$netcard_driver_modules" ]; then
-            netcard_driver_modules=$(sanityse_output "$netcard_driver_modules")
+            netcard_driver_modules=$(sanitize_output "$netcard_driver_modules")
         fi
         if [ -z "$netcard_driver" ] && [ ! -z "$netcard_driver_status" ]; then
             is_netcard=1

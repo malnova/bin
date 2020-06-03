@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         firewire_label[$firewire_nb]=$(str_str "$line" " ")
         if [ ! -z "${firewire_label[$firewire_nb]}" ]; then
             is_firewire=1
-            firewire_label[$firewire_nb]=$(sanityse_output "${firewire_label[$firewire_nb]}")
+            firewire_label[$firewire_nb]=$(sanitize_output "${firewire_label[$firewire_nb]}")
             if [ "$firewire_nb" -eq 0 ] || [ "${firewire_label[$firewire_nb]}" != "${firewire_label[$firewire_nb-1]}" ]; then
                 echo "<separator label=\"${firewire_label[firewire_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,13 +29,13 @@ if [ -e "${default_path}hwinfo" ]; then
         firewire_model=$(str_str "$line" "Model:")
         if [ ! -z "$firewire_model" ]; then
             is_firewire=1
-            firewire_model=$(sanityse_output "$firewire_model")
+            firewire_model=$(sanitize_output "$firewire_model")
             echo "<item label=\"Modèle : $firewire_model\" />"
         fi
         unset firewire_driver
         firewire_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$firewire_driver" ]; then
-            firewire_driver=$(sanityse_output "$firewire_driver")
+            firewire_driver=$(sanitize_output "$firewire_driver")
         fi
         unset firewire_driver_status_all
         firewire_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -46,22 +46,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     firewire_driver_status=$(echo "$firewire_driver_status,$driver_new")
                     firewire_status=$(echo "$firewire_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     firewire_driver_status=$(echo "$firewire_driver_status,$driver_new")
                     firewire_status=$(echo "$firewire_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     firewire_driver_status=$(echo "$firewire_driver_status,$driver_new")
                     firewire_status=$(echo "$firewire_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     firewire_driver_status=$(echo "$firewire_driver_status,$driver_new")
                     firewire_status=$(echo "$firewire_status,$driver_new inactifs")
                 fi
@@ -72,7 +72,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset firewire_driver_modules
         firewire_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$firewire_driver_modules" ]; then
-            firewire_driver_modules=$(sanityse_output "$firewire_driver_modules")
+            firewire_driver_modules=$(sanitize_output "$firewire_driver_modules")
         fi
         if [ -z "$firewire_driver" ] && [ ! -z "$firewire_driver_status" ]; then
             is_firewire=1

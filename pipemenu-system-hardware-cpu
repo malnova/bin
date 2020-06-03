@@ -12,14 +12,14 @@ if [ -e "${default_path}lscpu" ]; then
     socket_nb=$(echo "$cpu_nb" | sed -n -e 's/^Socket.*://p')
     if [ ! -z "$socket_nb" ]; then
         is_cpu=1
-        socket_nb=$(sanityse_output "$socket_nb")
+        socket_nb=$(sanitize_output "$socket_nb")
         echo "<item label=\"Nombre d'emplacements physiques / sockets : $socket_nb\" />"
     fi
     unset core_nb
     core_nb=$(echo "$cpu_nb" | sed -n -e 's/^Cœur.*://p')
     if [ ! -z "$core_nb" ]; then
         is_cpu=1
-        core_nb=$(sanityse_output "$core_nb")
+        core_nb=$(sanitize_output "$core_nb")
         echo "<item label=\"Nombre de cœurs : $core_nb\" />"
     fi
 fi
@@ -30,7 +30,7 @@ if [ -e "/proc/cpuinfo" ]; then
     cpu_nb_total=$(echo "$cpu" | grep -cioP '^processor\s*:\K.*')
     if [ ! -z "$cpu_nb_total" ]; then
         is_cpu=1
-        cpu_nb_total=$(sanityse_output "$cpu_nb_total")
+        cpu_nb_total=$(sanitize_output "$cpu_nb_total")
         echo "<item label=\"Nombre total de processeurs : $cpu_nb_total\" />"
     fi
     while read -d $'\xBF' line; do
@@ -38,18 +38,18 @@ if [ -e "/proc/cpuinfo" ]; then
         cpu_nb=$(echo "$line" | grep -ioP '^processor\s*:\K.*')
         if [ ! -z "$cpu_nb" ]; then
             is_cpu=1
-            cpu_nb=$(sanityse_output "$cpu_nb")
+            cpu_nb=$(sanitize_output "$cpu_nb")
             echo "<separator label=\"Processeur $cpu_nb\" />"
             unset cpu_model
             cpu_model=$(echo "$line" | grep -ioP '^model name\s*:\K.*')
             if [ ! -z "$cpu_model" ]; then
-                cpu_model=$(sanityse_output "$cpu_model")
+                cpu_model=$(sanitize_output "$cpu_model")
                 echo "<item label=\"Modèle : $cpu_model\" />"
             fi
             unset cpu_vendor
             cpu_vendor=$(echo "$line" | grep -ioP '^vendor_id\s*:\K.*')
             if [ ! -z "$cpu_vendor" ]; then
-                cpu_vendor=$(sanityse_output_with_quotes "$cpu_vendor")
+                cpu_vendor=$(sanitize_output_with_quotes "$cpu_vendor")
                 echo "<item label=\"Fabricant : $cpu_vendor\" />"
             fi
             unset cpu_cache

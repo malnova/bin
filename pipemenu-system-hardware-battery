@@ -19,7 +19,7 @@ if [ -e "${default_path}upower" ]; then
         battery_model=$(echo "$line" | grep -ioP '^\s*model:\K.*')
         if [ ! -z "$battery_model" ]; then
             is_battery=1
-            battery_model=$(sanityse_output "$battery_model")
+            battery_model=$(sanitize_output "$battery_model")
             echo "<item label=\"Modèle : $battery_model\" />"
             ((z++))
         fi
@@ -32,11 +32,11 @@ if [ -e "${default_path}upower" ]; then
                 battery_manufacturer=$(cat "${battery_folder}${battery_path}/uevent" | grep -ioP 'POWER_SUPPLY_MANUFACTURER=\K.*')
                 if [ ! -z "$battery_manufacturer" ]; then
                     is_battery=1
-                    battery_manufacturer=$(sanityse_output_with_quotes "$battery_manufacturer")
+                    battery_manufacturer=$(sanitize_output_with_quotes "$battery_manufacturer")
                     echo "<item label=\"Fabricant : $battery_manufacturer\" />"
                 fi
             fi
-            battery_path=$(sanityse_output "$battery_path")
+            battery_path=$(sanitize_output "$battery_path")
             echo "<item label=\"Chemin : $battery_path\" />"
             ((z++))
         fi
@@ -44,7 +44,7 @@ if [ -e "${default_path}upower" ]; then
         battery_technology=$(echo "$line" | grep -ioP '^\s*technology:\K.*')
         if [ ! -z "$battery_technology" ]; then
             is_battery=1
-            battery_technology=$(sanityse_output "$battery_technology")
+            battery_technology=$(sanitize_output "$battery_technology")
             echo "<item label=\"Technologie : $battery_technology\" />"
             ((z++))
         fi
@@ -52,7 +52,7 @@ if [ -e "${default_path}upower" ]; then
         battery_status=$(echo "$line" | grep -ioP '^\s*state:\K.*')
         if [ ! -z "$battery_status" ]; then
             is_battery=1
-            battery_status=$(sanityse_output "$battery_status")
+            battery_status=$(sanitize_output "$battery_status")
             echo "<item label=\"État : $battery_status\" />"
             ((z++))
         fi
@@ -60,7 +60,7 @@ if [ -e "${default_path}upower" ]; then
         battery_percentage=$(echo "$line" | grep -ioP '^\s*percentage:\K.*')
         if [ ! -z "$battery_percentage" ]; then
             is_battery=1
-            battery_percentage=$(sanityse_output "$battery_percentage")
+            battery_percentage=$(sanitize_output "$battery_percentage")
             echo "<item label=\"Niveau : $battery_percentage\" />"
             ((z++))
         fi
@@ -68,7 +68,7 @@ if [ -e "${default_path}upower" ]; then
         battery_time=$(echo "$line" | grep -ioP '^\s*time to empty:\K.*')
         if [ ! -z "$battery_time" ]; then
             is_battery=1
-            battery_time=$(sanityse_output "$battery_time")
+            battery_time=$(sanitize_output "$battery_time")
             echo "<item label=\"Temps restant : $battery_time\" />"
             ((z++))
         fi
@@ -94,7 +94,7 @@ else
                     battery_model=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_MODEL_NAME=\K.*')
                     if [ ! -z "$battery_model" ]; then
                         is_battery=1
-                        battery_model=$(sanityse_output "$battery_model")
+                        battery_model=$(sanitize_output "$battery_model")
                         echo "<item label=\"Modèle : $battery_model\" />"
                         ((z++))
                     fi
@@ -102,7 +102,7 @@ else
                     battery_manufacturer=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_MANUFACTURER=\K.*')
                     if [ ! -z "$battery_manufacturer" ]; then
                         is_battery=1
-                        battery_manufacturer=$(sanityse_output_with_quotes "$battery_manufacturer")
+                        battery_manufacturer=$(sanitize_output_with_quotes "$battery_manufacturer")
                         echo "<item label=\"Fabricant : $battery_manufacturer\" />"
                         ((z++))
                     fi
@@ -110,7 +110,7 @@ else
                     battery_path=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_NAME=\K.*')
                     if [ ! -z "$battery_path" ]; then
                         is_battery=1
-                        battery_path=$(sanityse_output "$battery_path")
+                        battery_path=$(sanitize_output "$battery_path")
                         echo "<item label=\"Chemin : $battery_path\" />"
                         ((z++))
                     fi
@@ -118,7 +118,7 @@ else
                     battery_technology=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_TECHNOLOGY=\K.*')
                     if [ ! -z "$battery_technology" ]; then
                         is_battery=1
-                        battery_technology=$(sanityse_output "$battery_technology")
+                        battery_technology=$(sanitize_output "$battery_technology")
                         echo "<item label=\"Technologie : $battery_technology\" />"
                         ((z++))
                     fi
@@ -126,7 +126,7 @@ else
                     battery_status=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_STATUS=\K.*')
                     if [ ! -z "$battery_status" ]; then
                         is_battery=1
-                        battery_status=$(sanityse_output "$battery_status")
+                        battery_status=$(sanitize_output "$battery_status")
                         echo "<item label=\"État : $battery_status\" />"
                         ((z++))
                     fi
@@ -134,7 +134,7 @@ else
                     battery_percentage=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_CAPACITY=\K.*')
                     if [ ! -z "$battery_percentage" ]; then
                         is_battery=1
-                        battery_percentage=$(sanityse_output "$battery_percentage")
+                        battery_percentage=$(sanitize_output "$battery_percentage")
                         echo "<item label=\"Niveau : ${battery_percentage}%\" />"
                         ((z++))
                     fi

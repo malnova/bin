@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         pci_label[$pci_nb]=$(str_str "$line" " ")
         if [ ! -z "${pci_label[$pci_nb]}" ]; then
             is_pci=1
-            pci_label[$pci_nb]=$(sanityse_output "${pci_label[$pci_nb]}")
+            pci_label[$pci_nb]=$(sanitize_output "${pci_label[$pci_nb]}")
             if [ "$pci_nb" -eq 0 ] || [ "${pci_label[$pci_nb]}" != "${pci_label[$pci_nb-1]}" ]; then
                 echo "<separator label=\"${pci_label[pci_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,13 +29,13 @@ if [ -e "${default_path}hwinfo" ]; then
         pci_model=$(str_str "$line" "Model:")
         if [ ! -z "$pci_model" ]; then
             is_pci=1
-            pci_model=$(sanityse_output "$pci_model")
+            pci_model=$(sanitize_output "$pci_model")
             echo "<item label=\"Modèle : $pci_model\" />"
         fi
         unset pci_driver
         pci_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$pci_driver" ]; then
-            pci_driver=$(sanityse_output "$pci_driver")
+            pci_driver=$(sanitize_output "$pci_driver")
         fi
         unset pci_driver_status_all
         pci_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -46,22 +46,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pci_driver_status=$(echo "$pci_driver_status,$driver_new")
                     pci_status=$(echo "$pci_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pci_driver_status=$(echo "$pci_driver_status,$driver_new")
                     pci_status=$(echo "$pci_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pci_driver_status=$(echo "$pci_driver_status,$driver_new")
                     pci_status=$(echo "$pci_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pci_driver_status=$(echo "$pci_driver_status,$driver_new")
                     pci_status=$(echo "$pci_status,$driver_new inactifs")
                 fi
@@ -72,7 +72,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset pci_driver_modules
         pci_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$pci_driver_modules" ]; then
-            pci_driver_modules=$(sanityse_output "$pci_driver_modules")
+            pci_driver_modules=$(sanitize_output "$pci_driver_modules")
         fi
         if [ -z "$pci_driver" ] && [ ! -z "$pci_driver_status" ]; then
             is_pci=1

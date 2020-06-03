@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         pcmcia_label[$pcmcia_nb]=$(str_str "$line" " ")
         if [ ! -z "${pcmcia_label[$pcmcia_nb]}" ]; then
             is_pcmcia=1
-            pcmcia_label[$pcmcia_nb]=$(sanityse_output "${pcmcia_label[$pcmcia_nb]}")
+            pcmcia_label[$pcmcia_nb]=$(sanitize_output "${pcmcia_label[$pcmcia_nb]}")
             if [ "$pcmcia_nb" -eq 0 ] || [ "${pcmcia_label[$pcmcia_nb]}" != "${pcmcia_label[$pcmcia_nb-1]}" ]; then
                 echo "<separator label=\"${pcmcia_label[pcmcia_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,13 +29,13 @@ if [ -e "${default_path}hwinfo" ]; then
         pcmcia_model=$(str_str "$line" "Model:")
         if [ ! -z "$pcmcia_model" ]; then
             is_pcmcia=1
-            pcmcia_model=$(sanityse_output "$pcmcia_model")
+            pcmcia_model=$(sanitize_output "$pcmcia_model")
             echo "<item label=\"Modèle : $pcmcia_model\" />"
         fi
         unset pcmcia_driver
         pcmcia_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$pcmcia_driver" ]; then
-            pcmcia_driver=$(sanityse_output "$pcmcia_driver")
+            pcmcia_driver=$(sanitize_output "$pcmcia_driver")
         fi
         unset pcmcia_driver_status_all
         pcmcia_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -46,22 +46,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pcmcia_driver_status=$(echo "$pcmcia_driver_status,$driver_new")
                     pcmcia_status=$(echo "$pcmcia_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pcmcia_driver_status=$(echo "$pcmcia_driver_status,$driver_new")
                     pcmcia_status=$(echo "$pcmcia_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pcmcia_driver_status=$(echo "$pcmcia_driver_status,$driver_new")
                     pcmcia_status=$(echo "$pcmcia_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pcmcia_driver_status=$(echo "$pcmcia_driver_status,$driver_new")
                     pcmcia_status=$(echo "$pcmcia_status,$driver_new inactifs")
                 fi
@@ -72,7 +72,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset pcmcia_driver_modules
         pcmcia_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$pcmcia_driver_modules" ]; then
-            pcmcia_driver_modules=$(sanityse_output "$pcmcia_driver_modules")
+            pcmcia_driver_modules=$(sanitize_output "$pcmcia_driver_modules")
         fi
         if [ -z "$pcmcia_driver" ] && [ ! -z "$pcmcia_driver_status" ]; then
             is_pcmcia=1

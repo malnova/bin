@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         sound_connector[$sound_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
         if [ ! -z "${sound_connector[$sound_nb]}" ]; then
             is_sound=1
-            sound_connector[$sound_nb]=$(sanityse_output "${sound_connector[$sound_nb]}")
+            sound_connector[$sound_nb]=$(sanitize_output "${sound_connector[$sound_nb]}")
             if [ "$sound_nb" -eq 0 ] || [ "${sound_connector[$sound_nb]}" != "${sound_connector[$sound_nb-1]}" ]; then
                 echo "<separator label=\"Port ${sound_connector[sound_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         sound_model=$(str_str "$line" "Model:")
         if [ ! -z "$sound_model" ]; then
             is_sound=1
-            sound_model=$(sanityse_output "$sound_model")
+            sound_model=$(sanitize_output "$sound_model")
             echo "<item label=\"Modèle : $sound_model\" />"
             ((z++))
         fi
@@ -37,14 +37,14 @@ if [ -e "${default_path}hwinfo" ]; then
         sound_vendor=$(str_str "$line" "Vendor:")
         if [ ! -z "$sound_vendor" ]; then
             is_sound=1
-            sound_vendor=$(sanityse_output_with_quotes "$sound_vendor")
+            sound_vendor=$(sanitize_output_with_quotes "$sound_vendor")
             echo "<item label=\"Fabricant : $sound_vendor\" />"
             ((z++))
         fi
         unset sound_driver
         sound_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$sound_driver" ]; then
-            sound_driver=$(sanityse_output "$sound_driver")
+            sound_driver=$(sanitize_output "$sound_driver")
         fi
         unset sound_driver_status_all
         sound_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -55,22 +55,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     sound_driver_status=$(echo "$sound_driver_status,$driver_new")
                     sound_status=$(echo "$sound_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     sound_driver_status=$(echo "$sound_driver_status,$driver_new")
                     sound_status=$(echo "$sound_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     sound_driver_status=$(echo "$sound_driver_status,$driver_new")
                     sound_status=$(echo "$sound_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     sound_driver_status=$(echo "$sound_driver_status,$driver_new")
                     sound_status=$(echo "$sound_status,$driver_new inactifs")
                 fi
@@ -81,7 +81,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset sound_driver_modules
         sound_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$sound_driver_modules" ]; then
-            sound_driver_modules=$(sanityse_output "$sound_driver_modules")
+            sound_driver_modules=$(sanitize_output "$sound_driver_modules")
         fi
         if [ -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ]; then
             is_sound=1

@@ -2,7 +2,7 @@
 end_delimiter=" |@| "
 
 # Fonction pour un affichage correct dans le menu d'Openbox (pipemenus)
-function sanityse_output() {
+function sanitize_output() {
     local str="$@"
     local output
     # Conserver une seule ligne ;
@@ -13,7 +13,7 @@ function sanityse_output() {
     output=$(echo $str | head -n1 | sed 's/\"//g' | sed 's/_/__/g' | sed 's/&/&amp;/g')
     echo $output
 }
-function sanityse_output_with_quotes() {
+function sanitize_output_with_quotes() {
     local str="$@"
     local output
     # Conserver une seule ligne ;
@@ -32,7 +32,7 @@ function sanityse_output_with_quotes() {
 }
 
 # Fonction pour un affichage correct dans un émulateur de terminal
-function sanityse_terminal_output() {
+function sanitize_terminal_output() {
     local str="$@"
     local output
     # Conserver une seule ligne ;

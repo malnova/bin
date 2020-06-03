@@ -57,7 +57,7 @@ if [ ! -z "$is_vpn" ] || [ "$is_connection" == "1" ]; then
         done
     fi
     if [ ! -z "$ip_wan" ]; then
-        ip_wan=$(sanityse_output "$ip_wan")
+        ip_wan=$(sanitize_output "$ip_wan")
         echo "<item label=\"$ip_wan\" />"
     else
         echo "<item label=\"L'adresse IP n'a pas pu être récupérée.\" />"

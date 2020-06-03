@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         usb_label[$usb_nb]=$(str_str "$line" " ")
         if [ ! -z "${usb_label[$usb_nb]}" ]; then
             is_usb=1
-            usb_label[$usb_nb]=$(sanityse_output "${usb_label[$usb_nb]}")
+            usb_label[$usb_nb]=$(sanitize_output "${usb_label[$usb_nb]}")
             if [ "$usb_nb" -eq 0 ] || [ "${usb_label[$usb_nb]}" != "${usb_label[$usb_nb-1]}" ]; then
                 echo "<separator label=\"${usb_label[usb_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         usb_model=$(str_str "$line" "Model:")
         if [ ! -z "$usb_model" ]; then
             is_usb=1
-            usb_model=$(sanityse_output "$usb_model")
+            usb_model=$(sanitize_output "$usb_model")
             echo "<item label=\"Modèle : $usb_model\" />"
         fi
         unset usb_speed
@@ -44,7 +44,7 @@ if [ -e "${default_path}hwinfo" ]; then
         fi
         if [ ! -z "$usb_speed" ]; then
             is_usb=1
-            usb_speed=$(sanityse_output "$usb_speed")
+            usb_speed=$(sanitize_output "$usb_speed")
             if [[ $usb_speed =~ ^[0-9]+$ ]]; then
                 usb_speed=$(echo "${usb_speed} Mbps")
             fi
@@ -64,7 +64,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset usb_driver
         usb_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$usb_driver" ]; then
-            usb_driver=$(sanityse_output "$usb_driver")
+            usb_driver=$(sanitize_output "$usb_driver")
         fi
         unset usb_driver_status_all
         usb_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -75,22 +75,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     usb_driver_status=$(echo "$usb_driver_status,$driver_new")
                     usb_status=$(echo "$usb_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     usb_driver_status=$(echo "$usb_driver_status,$driver_new")
                     usb_status=$(echo "$usb_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     usb_driver_status=$(echo "$usb_driver_status,$driver_new")
                     usb_status=$(echo "$usb_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     usb_driver_status=$(echo "$usb_driver_status,$driver_new")
                     usb_status=$(echo "$usb_status,$driver_new inactifs")
                 fi
@@ -101,7 +101,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset usb_driver_modules
         usb_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$usb_driver_modules" ]; then
-            usb_driver_modules=$(sanityse_output "$usb_driver_modules")
+            usb_driver_modules=$(sanitize_output "$usb_driver_modules")
         fi
         if [ -z "$usb_driver" ] && [ ! -z "$usb_driver_status" ]; then
             is_usb=1

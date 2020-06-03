@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         pppoe_label[$pppoe_nb]=$(str_str "$line" " ")
         if [ ! -z "${pppoe_label[$pppoe_nb]}" ]; then
             is_pppoe=1
-            pppoe_label[$pppoe_nb]=$(sanityse_output "${pppoe_label[$pppoe_nb]}")
+            pppoe_label[$pppoe_nb]=$(sanitize_output "${pppoe_label[$pppoe_nb]}")
             if [ "$pppoe_nb" -eq 0 ] || [ "${pppoe_label[$pppoe_nb]}" != "${pppoe_label[$pppoe_nb-1]}" ]; then
                 echo "<separator label=\"${pppoe_label[pppoe_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,13 +29,13 @@ if [ -e "${default_path}hwinfo" ]; then
         pppoe_model=$(str_str "$line" "Model:")
         if [ ! -z "$pppoe_model" ]; then
             is_pppoe=1
-            pppoe_model=$(sanityse_output "$pppoe_model")
+            pppoe_model=$(sanitize_output "$pppoe_model")
             echo "<item label=\"Modèle : $pppoe_model\" />"
         fi
         unset pppoe_driver
         pppoe_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$pppoe_driver" ]; then
-            pppoe_driver=$(sanityse_output "$pppoe_driver")
+            pppoe_driver=$(sanitize_output "$pppoe_driver")
         fi
         unset pppoe_driver_status_all
         pppoe_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -46,22 +46,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
                     pppoe_status=$(echo "$pppoe_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
                     pppoe_status=$(echo "$pppoe_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
                     pppoe_status=$(echo "$pppoe_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     pppoe_driver_status=$(echo "$pppoe_driver_status,$driver_new")
                     pppoe_status=$(echo "$pppoe_status,$driver_new inactifs")
                 fi
@@ -72,7 +72,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset pppoe_driver_modules
         pppoe_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$pppoe_driver_modules" ]; then
-            pppoe_driver_modules=$(sanityse_output "$pppoe_driver_modules")
+            pppoe_driver_modules=$(sanitize_output "$pppoe_driver_modules")
         fi
         if [ -z "$pppoe_driver" ] && [ ! -z "$pppoe_driver_status" ]; then
             is_pppoe=1

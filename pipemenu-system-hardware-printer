@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         printer_connector[$printer_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
         if [ ! -z "${printer_connector[$printer_nb]}" ]; then
             is_printer=1
-            printer_connector[$printer_nb]=$(sanityse_output "${printer_connector[$printer_nb]}")
+            printer_connector[$printer_nb]=$(sanitize_output "${printer_connector[$printer_nb]}")
             if [ "$printer_nb" -eq 0 ] || [ "${printer_connector[$printer_nb]}" != "${printer_connector[$printer_nb-1]}" ]; then
                 echo "<separator label=\"Port ${printer_connector[printer_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         printer_model=$(str_str "$line" "Model:")
         if [ ! -z "$printer_model" ]; then
             is_printer=1
-            printer_model=$(sanityse_output "$printer_model")
+            printer_model=$(sanitize_output "$printer_model")
             echo "<item label=\"Modèle : $printer_model\" />"
             ((z++))
         fi
@@ -37,14 +37,14 @@ if [ -e "${default_path}hwinfo" ]; then
         printer_vendor=$(str_str "$line" "Vendor:")
         if [ ! -z "$printer_vendor" ]; then
             is_printer=1
-            printer_vendor=$(sanityse_output_with_quotes "$printer_vendor")
+            printer_vendor=$(sanitize_output_with_quotes "$printer_vendor")
             echo "<item label=\"Fabricant : $printer_vendor\" />"
             ((z++))
         fi
         unset printer_driver
         printer_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$printer_driver" ]; then
-            printer_driver=$(sanityse_output "$printer_driver")
+            printer_driver=$(sanitize_output "$printer_driver")
         fi
         unset printer_driver_status_all
         printer_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -55,22 +55,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     printer_driver_status=$(echo "$printer_driver_status,$driver_new")
                     printer_status=$(echo "$printer_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     printer_driver_status=$(echo "$printer_driver_status,$driver_new")
                     printer_status=$(echo "$printer_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     printer_driver_status=$(echo "$printer_driver_status,$driver_new")
                     printer_status=$(echo "$printer_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     printer_driver_status=$(echo "$printer_driver_status,$driver_new")
                     printer_status=$(echo "$printer_status,$driver_new inactifs")
                 fi
@@ -81,7 +81,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset printer_driver_modules
         printer_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$printer_driver_modules" ]; then
-            printer_driver_modules=$(sanityse_output "$printer_driver_modules")
+            printer_driver_modules=$(sanitize_output "$printer_driver_modules")
         fi
         if [ -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ]; then
             is_printer=1

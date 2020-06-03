@@ -15,12 +15,12 @@ if [ -e "/var/log/Xorg.0.log" ]; then
     fi
     if [ ! -z "$screen_model" ]; then
         is_screen=1
-        screen_model=$(sanityse_output "$screen_model")
+        screen_model=$(sanitize_output "$screen_model")
         echo "<item label=\"Modèle : $screen_model\" />"
     fi
     if [ ! -z "$screen_vendor" ]; then
         is_screen=1
-        screen_vendor=$(sanityse_output_with_quotes "$screen_vendor")
+        screen_vendor=$(sanitize_output_with_quotes "$screen_vendor")
         echo "<item label=\"Fabricant : $screen_vendor\" />"
     fi
 fi
@@ -35,7 +35,7 @@ while read -r screen_is_connected; do
     unset screen_device
     screen_device=$(echo "$screen_is_connected" | awk -F' connected ' '{print $1}')
     if [ ! -z "$screen_device" ]; then
-        screen_device=$(sanityse_output "$screen_device")
+        screen_device=$(sanitize_output "$screen_device")
         echo "<separator label=\"$screen_device\" />"
     fi
     unset screen_details
@@ -56,7 +56,7 @@ while read -r screen_is_connected; do
                 screen_diagonal=$(echo "$screen_diagonal" | cut -d '.' -f1)
             fi
             screen_size="${screen_width}mm x ${screen_height}mm (${screen_diagonal} pouces)"
-            screen_size=$(sanityse_output "$screen_size")
+            screen_size=$(sanitize_output "$screen_size")
             echo "<item label=\"Taille : $screen_size\" />"
         fi
         unset screen_resolution
@@ -66,14 +66,14 @@ while read -r screen_is_connected; do
                 screen_resolution=$(echo "$screen_description" | awk -F' connected ' '{print $2}' | awk '{print $2}')
             fi
             if [[ "$screen_resolution" =~ [0-9] ]]; then
-                screen_resolution=$(sanityse_output "$screen_resolution")
+                screen_resolution=$(sanitize_output "$screen_resolution")
                 echo "<item label=\"Résolution : $screen_resolution\" />"
             fi
         fi
         unset screen_frequency
         screen_frequency=$(echo "$screen_is_active" | cut -d '*' -f1 | awk 'NF>1{print $NF}')
         if [ ! -z "$screen_frequency" ]; then
-            screen_frequency=$(sanityse_output "$screen_frequency")
+            screen_frequency=$(sanitize_output "$screen_frequency")
             echo "<item label=\"Fréquence : $screen_frequency MHz\" />"
         fi
         if [ ! -z "$screen_description" ] && [[ "$screen_description" =~ " primary " ]]; then

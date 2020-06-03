@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         gfxcard_connector[$gfxcard_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
         if [ ! -z "${gfxcard_connector[$gfxcard_nb]}" ]; then
             is_gfxcard=1
-            gfxcard_connector[$gfxcard_nb]=$(sanityse_output "${gfxcard_connector[$gfxcard_nb]}")
+            gfxcard_connector[$gfxcard_nb]=$(sanitize_output "${gfxcard_connector[$gfxcard_nb]}")
             if [ "$gfxcard_nb" -eq 0 ] || [ "${gfxcard_connector[$gfxcard_nb]}" != "${gfxcard_connector[$gfxcard_nb-1]}" ]; then
                 echo "<separator label=\"Port ${gfxcard_connector[gfxcard_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         gfxcard_model=$(str_str "$line" "Model:")
         if [ ! -z "$gfxcard_model" ]; then
             is_gfxcard=1
-            gfxcard_model=$(sanityse_output "$gfxcard_model")
+            gfxcard_model=$(sanitize_output "$gfxcard_model")
             echo "<item label=\"Modèle : $gfxcard_model\" />"
             ((z++))
         fi
@@ -37,14 +37,14 @@ if [ -e "${default_path}hwinfo" ]; then
         gfxcard_vendor=$(str_str "$line" "Vendor:")
         if [ ! -z "$gfxcard_vendor" ]; then
             is_gfxcard=1
-            gfxcard_vendor=$(sanityse_output_with_quotes "$gfxcard_vendor")
+            gfxcard_vendor=$(sanitize_output_with_quotes "$gfxcard_vendor")
             echo "<item label=\"Fabricant : $gfxcard_vendor\" />"
             ((z++))
         fi
         unset gfxcard_driver
         gfxcard_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$gfxcard_driver" ]; then
-            gfxcard_driver=$(sanityse_output "$gfxcard_driver")
+            gfxcard_driver=$(sanitize_output "$gfxcard_driver")
         fi
         unset gfxcard_driver_status_all
         gfxcard_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -55,22 +55,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     gfxcard_driver_status=$(echo "$gfxcard_driver_status,$driver_new")
                     gfxcard_status=$(echo "$gfxcard_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     gfxcard_driver_status=$(echo "$gfxcard_driver_status,$driver_new")
                     gfxcard_status=$(echo "$gfxcard_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     gfxcard_driver_status=$(echo "$gfxcard_driver_status,$driver_new")
                     gfxcard_status=$(echo "$gfxcard_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     gfxcard_driver_status=$(echo "$gfxcard_driver_status,$driver_new")
                     gfxcard_status=$(echo "$gfxcard_status,$driver_new inactifs")
                 fi
@@ -81,7 +81,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset gfxcard_driver_modules
         gfxcard_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$gfxcard_driver_modules" ]; then
-            gfxcard_driver_modules=$(sanityse_output "$gfxcard_driver_modules")
+            gfxcard_driver_modules=$(sanitize_output "$gfxcard_driver_modules")
         fi
         if [ -z "$gfxcard_driver" ] && [ ! -z "$gfxcard_driver_status" ]; then
             is_gfxcard=1

@@ -16,31 +16,31 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-bios" ]; then
     unset bios_vendor
     bios_vendor=$(echo "$bios" | grep -ioP '^\s*Vendor:\K.*')
     if [ ! -z "$bios_vendor" ]; then
-        bios_vendor=$(sanityse_output_with_quotes "$bios_vendor")
+        bios_vendor=$(sanitize_output_with_quotes "$bios_vendor")
         echo "<item label=\"Fabricant : $bios_vendor\" />"
     fi
     unset bios_version
     bios_version=$(echo "$bios" | grep -ioP '^\s*Version:\K.*')
     if [ ! -z "$bios_version" ]; then
-        bios_version=$(sanityse_output "$bios_version")
+        bios_version=$(sanitize_output "$bios_version")
         echo "<item label=\"Version : $bios_version\" />"
     fi
     unset bios_date
     bios_date=$(echo "$bios" | grep -ioP '^\s*Release Date:\K.*')
     if [ ! -z "$bios_date" ]; then
-        bios_date=$(sanityse_output "$bios_date")
+        bios_date=$(sanitize_output "$bios_date")
         echo "<item label=\"Date : $bios_date\" />"
     fi
     unset bios_revision
     bios_revision=$(echo "$bios" | grep -ioP '^\s*BIOS Revision:\K.*')
     if [ ! -z "$bios_revision" ]; then
-        bios_revision=$(sanityse_output "$bios_revision")
+        bios_revision=$(sanitize_output "$bios_revision")
         echo "<item label=\"Révision du BIOS : $bios_revision\" />"
     fi
     unset bios_firmware_revision
     bios_firmware_revision=$(echo "$bios" | grep -ioP '^\s*Firmware Revision:\K.*')
     if [ ! -z "$bios_firmware_revision" ]; then
-        bios_firmware_revision=$(sanityse_output "$bios_firmware_revision")
+        bios_firmware_revision=$(sanitize_output "$bios_firmware_revision")
         echo "<item label=\"Révision du firmware : $bios_firmware_revision\" />"
     fi
     unset IFS

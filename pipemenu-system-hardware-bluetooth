@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         bluetooth_connector[$bluetooth_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
         if [ ! -z "${bluetooth_connector[$bluetooth_nb]}" ]; then
             is_bluetooth=1
-            bluetooth_connector[$bluetooth_nb]=$(sanityse_output "${bluetooth_connector[$bluetooth_nb]}")
+            bluetooth_connector[$bluetooth_nb]=$(sanitize_output "${bluetooth_connector[$bluetooth_nb]}")
             if [ "$bluetooth_nb" -eq 0 ] || [ "${bluetooth_connector[$bluetooth_nb]}" != "${bluetooth_connector[$bluetooth_nb-1]}" ]; then
                 echo "<separator label=\"Port ${bluetooth_connector[bluetooth_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
         bluetooth_model=$(str_str "$line" "Model:")
         if [ ! -z "$bluetooth_model" ]; then
             is_bluetooth=1
-            bluetooth_model=$(sanityse_output "$bluetooth_model")
+            bluetooth_model=$(sanitize_output "$bluetooth_model")
             echo "<item label=\"Modèle : $bluetooth_model\" />"
             ((z++))
         fi
@@ -37,7 +37,7 @@ if [ -e "${default_path}hwinfo" ]; then
         bluetooth_vendor=$(str_str "$line" "Vendor:")
         if [ ! -z "$bluetooth_vendor" ]; then
             is_bluetooth=1
-            bluetooth_vendor=$(sanityse_output_with_quotes "$bluetooth_vendor")
+            bluetooth_vendor=$(sanitize_output_with_quotes "$bluetooth_vendor")
             echo "<item label=\"Fabricant : $bluetooth_vendor\" />"
             ((z++))
         fi
@@ -45,7 +45,7 @@ if [ -e "${default_path}hwinfo" ]; then
         bluetooth_speed=$(str_str "$line" "Speed:")
         if [ ! -z "$bluetooth_speed" ]; then
             is_bluetooth=1
-            bluetooth_speed=$(sanityse_output "$bluetooth_speed")
+            bluetooth_speed=$(sanitize_output "$bluetooth_speed")
             if [[ "$bluetooth_speed" =~ "1.5" ]]; then
                 bluetooth_speed="$bluetooth_speed (USB 1.0)"
             elif [[ "$bluetooth_speed" =~ "12" ]]; then
@@ -63,7 +63,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset bluetooth_driver
         bluetooth_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$bluetooth_driver" ]; then
-            bluetooth_driver=$(sanityse_output "$bluetooth_driver")
+            bluetooth_driver=$(sanitize_output "$bluetooth_driver")
         fi
         unset bluetooth_driver_status_all
         bluetooth_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -74,22 +74,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     bluetooth_driver_status=$(echo "$bluetooth_driver_status,$driver_new")
                     bluetooth_status=$(echo "$bluetooth_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     bluetooth_driver_status=$(echo "$bluetooth_driver_status,$driver_new")
                     bluetooth_status=$(echo "$bluetooth_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     bluetooth_driver_status=$(echo "$bluetooth_driver_status,$driver_new")
                     bluetooth_status=$(echo "$bluetooth_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     bluetooth_driver_status=$(echo "$bluetooth_driver_status,$driver_new")
                     bluetooth_status=$(echo "$bluetooth_status,$driver_new inactifs")
                 fi
@@ -100,7 +100,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset bluetooth_driver_modules
         bluetooth_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$bluetooth_driver_modules" ]; then
-            bluetooth_driver_modules=$(sanityse_output "$bluetooth_driver_modules")
+            bluetooth_driver_modules=$(sanitize_output "$bluetooth_driver_modules")
         fi
         if [ -z "$bluetooth_driver" ] && [ ! -z "$bluetooth_driver_status" ]; then
             is_bluetooth=1

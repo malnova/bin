@@ -11,16 +11,54 @@ if [ -e "${default_path}ip" ]; then
         for interface in $interfaces; do
             ip_lan=$(${default_path}ip -f inet -o addr show $interface | cut -d\  -f 7 | cut -d/ -f 1)
             if [ ! -z "$ip_lan" ]; then
-                interface=$(sanityse_output "$interface")
-                ip_lan=$(sanityse_output "$ip_lan")
+                interface=$(sanitize_output "$interface")
+                ip_lan=$(sanitize_output "$ip_lan")
                 echo "<item label=\"IP lan ($interface) : $ip_lan\" />"
                 ((z++))
             fi
         done
-        if [ "$z" -gt 0 ]; then
-            echo "<separator />"
-        fi
     fi
+fi
+if [ -e "${default_path}nmcli" ]; then
+    IFS=$' '
+    z=0
+    while read -d $'\xBF' line; do
+        if [[ $line =~ "servers: " ]]; then
+            unset server interface type
+            ((z++))
+            if [ "$z" == "1" ]; then
+                echo "<separator label=\"Adresses DNS\" />"
+            fi
+            server=$(echo "$line" | grep -ioP 'servers: \K.*')
+            interface=$(echo "$line" | grep -ioP 'interface: \K.*')
+            type=$(echo "$line" | grep -ioP 'type: \K.*')
+            if [ ! -z "$interface" ] && [ ! -z "$type" ]; then
+                echo "<item label=\"IP n°$z : $server (interface $interface, type $type)\" />"
+            elif [ ! -z "$interface" ]; then
+                echo "<item label=\"IP n°$z : $server (interface $interface)\" />"
+            elif [ ! -z "$type" ]; then
+                echo "<item label=\"IP n°$z : $server (type $type)\" />"
+            else
+                echo "<item label=\"IP n°$z : $server\" />"
+            fi
+        fi
+    done < <(${default_path}nmcli | awk '/DNS configuration:/,EOF { print $0 }' | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    unset IFS
+elif [ -e "/etc/resolv.conf" ]; then
+    unset dns
+    dns=$(grep "nameserver" /etc/resolv.conf)
+    if [ ! -z "$dns" ]; then
+        echo "<separator label=\"Adresses DNS\" />"
+        z=0
+        while read -r line; do
+            ((z++))
+            dns_ip=$(echo $line | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+            echo "<item label=\"IP n°$z : $dns_ip\" />"
+        done <<< "$dns"
+    fi
+fi
+if [ "$z" -gt 0 ]; then
+    echo "<separator />"
 fi
 
 echo "<menu execute=\"${scripts_path}pipemenu-system-network-ip-wan\" id=\"system-network-ip-wan\" label=\"Adresse IP publique\" />"

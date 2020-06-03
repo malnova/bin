@@ -12,28 +12,28 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-baseboard" ]; then
     board_name=$(echo "$board" | grep -ioP '^\s*Product Name:\K.*')
     if [ ! -z "$board_name" ]; then
         is_board=1
-        board_name=$(sanityse_output "$board_name")
+        board_name=$(sanitize_output "$board_name")
         echo "<item label=\"Modèle : $board_name\" />"
     fi
     unset board_vendor
     board_vendor=$(echo "$board" | grep -ioP '^\s*Manufacturer:\K.*')
     if [ ! -z "$board_vendor" ]; then
         is_board=1
-        board_vendor=$(sanityse_output_with_quotes "$board_vendor")
+        board_vendor=$(sanitize_output_with_quotes "$board_vendor")
         echo "<item label=\"Fabricant : $board_vendor\" />"
     fi
     unset board_version
     board_version=$(echo "$board" | grep -ioP '^\s*Version:\K.*')
     if [ ! -z "$board_version" ]; then
         is_board=1
-        board_version=$(sanityse_output "$board_version")
+        board_version=$(sanitize_output "$board_version")
         echo "<item label=\"Version : $board_version\" />"
     fi
     unset board_serial_number
     board_serial_number=$(echo "$board" | grep -ioP '^\s*Serial Number:\K.*')
     if [ ! -z "$board_serial_number" ]; then
         is_board=1
-        board_serial_number=$(sanityse_output "$board_serial_number")
+        board_serial_number=$(sanitize_output "$board_serial_number")
         echo "<item label=\"N° de série : $board_serial_number\" />"
     fi
     unset IFS
@@ -49,7 +49,7 @@ if [ -z "$is_board" ]; then
         board_name=$(cat /sys/devices/virtual/dmi/id/board_name)
         if [ ! -z "$board_name" ]; then
             is_board=1
-            board_name=$(sanityse_output "$board_name")
+            board_name=$(sanitize_output "$board_name")
             echo "<item label=\"Modèle : $board_name\" />"
         fi
     fi
@@ -58,7 +58,7 @@ if [ -z "$is_board" ]; then
         board_vendor=$(cat /sys/devices/virtual/dmi/id/board_vendor)
         if [ ! -z "$board_vendor" ]; then
             is_board=1
-            board_vendor=$(sanityse_output_with_quotes "$board_vendor")
+            board_vendor=$(sanitize_output_with_quotes "$board_vendor")
             echo "<item label=\"Fabricant : $board_vendor\" />"
         fi
     fi

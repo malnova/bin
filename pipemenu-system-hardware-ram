@@ -14,15 +14,15 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     ram_slot_total=$(echo "$ram" | grep -ioP '^\s*Number Of Devices:\K.*')
     if [ ! -z "$ram_slot_total" ]; then
         is_ram=1
-        ram_slot_total=$(sanityse_output "$ram_slot_total")
+        ram_slot_total=$(sanitize_output "$ram_slot_total")
         echo "<item label=\"Nombre total de slots : $ram_slot_total\" />"
         ram_slot_used=$(echo "$ram" | grep -cioP '^\tPart Number: (?!\[Empty\])')
         ram_slot_unused=$(echo "$ram" | grep -ci 'No Module Installed')
         ram_slot_used=$(( ram_slot_used - ram_slot_unused ))
-        ram_slot_used=$(sanityse_output "$ram_slot_used")
+        ram_slot_used=$(sanitize_output "$ram_slot_used")
         echo "<item label=\"Nombre de slots utilisés : $ram_slot_used\" />"
         ram_slot_free=$(( ram_slot_total - ram_slot_used ))
-        ram_slot_free=$(sanityse_output "$ram_slot_free")
+        ram_slot_free=$(sanitize_output "$ram_slot_free")
         echo "<item label=\"Nombre de slots libres : $ram_slot_free\" />"
         ((x++))
     fi
@@ -73,7 +73,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             unset is_ram
             echo "<separator />"
         fi
-        ram_supported_types=$(sanityse_output "$ram_supported_types")
+        ram_supported_types=$(sanitize_output "$ram_supported_types")
         echo "<item label=\"Types supportés : ${ram_supported_types}\" />"
         ((y++))
     fi
@@ -93,11 +93,11 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_locator=$(echo "$line" | grep -ioP '^\s*Locator:\K.*')
             if [ ! -z "$ram_locator" ]; then
                 is_ram=1
-                ram_locator=$(sanityse_output "$ram_locator")
+                ram_locator=$(sanitize_output "$ram_locator")
                 while read -r locators; do
                     if [[ "$locators" =~ ^$ram_locator':' ]]; then
                         ram_locator_type=$(echo "$locators" | grep -ioP "^\s*$ram_locator:\K.*")
-                        ram_locator_type=$(sanityse_output "$ram_locator_type")
+                        ram_locator_type=$(sanitize_output "$ram_locator_type")
                     fi
                 done <<< "$ram_locators"
                 if [ -z "$ram_locator_type" ]; then
@@ -123,7 +123,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_form_factor=$(echo "$line" | grep -ioP '^\s*Form Factor:\K.*')
             if [ ! -z "$ram_form_factor" ]; then
                 is_ram=1
-                ram_form_factor=$(sanityse_output "$ram_form_factor")
+                ram_form_factor=$(sanitize_output "$ram_form_factor")
                 echo "<item label=\"Connecteur : $ram_form_factor\" />"
                 ((z++))
             fi
@@ -131,7 +131,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_type=$(echo "$line" | grep -ioP '^\s*Type:\K.*')
             if [ ! -z "$ram_type" ]; then
                 is_ram=1
-                ram_type=$(sanityse_output "$ram_type")
+                ram_type=$(sanitize_output "$ram_type")
                 echo "<item label=\"Type : $ram_type\" />"
                 ((z++))
             fi
@@ -139,7 +139,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_type_detail=$(echo "$line" | grep -ioP '^\s*Type Detail:\K.*')
             if [ ! -z "$ram_type_detail" ]; then
                 is_ram=1
-                ram_type_detail=$(sanityse_output "$ram_type_detail")
+                ram_type_detail=$(sanitize_output "$ram_type_detail")
                 echo "<item label=\"Détail : $ram_type_detail\" />"
                 ((z++))
             fi
@@ -147,7 +147,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_speed=$(echo "$line" | grep -ioP '^\s*Speed:\K.*')
             if [ ! -z "$ram_speed" ]; then
                 is_ram=1
-                ram_speed=$(sanityse_output "$ram_speed")
+                ram_speed=$(sanitize_output "$ram_speed")
                 echo "<item label=\"Vitesse : $ram_speed\" />"
                 ((z++))
             fi
@@ -155,7 +155,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_manufacturer=$(echo "$line" | grep -ioP '^\s*Manufacturer:\K.*')
             if [ ! -z "$ram_manufacturer" ]; then
                 is_ram=1
-                ram_manufacturer=$(sanityse_output_with_quotes "$ram_manufacturer")
+                ram_manufacturer=$(sanitize_output_with_quotes "$ram_manufacturer")
                 echo "<item label=\"Fabricant : $ram_manufacturer\" />"
                 ((z++))
             fi
@@ -163,7 +163,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_part_number=$(echo "$line" | grep -ioP '^\s*Part Number:\K.*')
             if [ ! -z "$ram_part_number" ]; then
                 is_ram=1
-                ram_part_number=$(sanityse_output "$ram_part_number")
+                ram_part_number=$(sanitize_output "$ram_part_number")
                 echo "<item label=\"Référence : $ram_part_number\" />"
                 ((z++))
             fi

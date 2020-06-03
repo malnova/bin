@@ -15,7 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         scsi_label[$scsi_nb]=$(str_str "$line" " ")
         if [ ! -z "${scsi_label[$scsi_nb]}" ]; then
             is_scsi=1
-            scsi_label[$scsi_nb]=$(sanityse_output "${scsi_label[$scsi_nb]}")
+            scsi_label[$scsi_nb]=$(sanitize_output "${scsi_label[$scsi_nb]}")
             if [ "$scsi_nb" -eq 0 ] || [ "${scsi_label[$scsi_nb]}" != "${scsi_label[$scsi_nb-1]}" ]; then
                 echo "<separator label=\"${scsi_label[scsi_nb]}\" />"
             elif [ "$z" -gt 0 ]; then
@@ -29,13 +29,13 @@ if [ -e "${default_path}hwinfo" ]; then
         scsi_model=$(str_str "$line" "Model:")
         if [ ! -z "$scsi_model" ]; then
             is_scsi=1
-            scsi_model=$(sanityse_output "$scsi_model")
+            scsi_model=$(sanitize_output "$scsi_model")
             echo "<item label=\"Modèle : $scsi_model\" />"
         fi
         unset scsi_driver
         scsi_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
         if [ ! -z "$scsi_driver" ]; then
-            scsi_driver=$(sanityse_output "$scsi_driver")
+            scsi_driver=$(sanitize_output "$scsi_driver")
         fi
         unset scsi_driver_status_all
         scsi_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -46,22 +46,22 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset driver_new
                 if [[ "$status" =~ "is active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
                     scsi_status=$(echo "$scsi_status,$driver_new actif")
                 elif [[ "$status" =~ "are active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
                     scsi_status=$(echo "$scsi_status,$driver_new actifs")
                 elif [[ "$status" =~ "is not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/is not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
                     scsi_status=$(echo "$scsi_status,$driver_new inactif")
                 elif [[ "$status" =~ "are not active" ]]; then
                     driver_new=$(echo "$status" | sed 's/are not active//g')
-                    driver_new=$(sanityse_output "$driver_new")
+                    driver_new=$(sanitize_output "$driver_new")
                     scsi_driver_status=$(echo "$scsi_driver_status,$driver_new")
                     scsi_status=$(echo "$scsi_status,$driver_new inactifs")
                 fi
@@ -72,7 +72,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset scsi_driver_modules
         scsi_driver_modules=$(str_str "$line" "Driver Modules:")
         if [ ! -z "$scsi_driver_modules" ]; then
-            scsi_driver_modules=$(sanityse_output "$scsi_driver_modules")
+            scsi_driver_modules=$(sanitize_output "$scsi_driver_modules")
         fi
         if [ -z "$scsi_driver" ] && [ ! -z "$scsi_driver_status" ]; then
             is_scsi=1

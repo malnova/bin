@@ -22,7 +22,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 declare -a disk_connector
                 disk_connector[$disk_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
                 if [ ! -z "${disk_connector[$disk_nb]}" ]; then
-                    disk_connector[$disk_nb]=$(sanityse_output "${disk_connector[$disk_nb]}")
+                    disk_connector[$disk_nb]=$(sanitize_output "${disk_connector[$disk_nb]}")
                     if [ "$disk_nb" -eq 0 ] || [ "${disk_connector[$disk_nb]}" != "${disk_connector[$disk_nb-1]}" ]; then
                         echo "<separator label=\"Port ${disk_connector[disk_nb]}\" />"
                     elif [ "$z" -gt 0 ]; then
@@ -34,13 +34,13 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset disk_model
                 disk_model=$(str_str "$line" "Model:")
                 if [ ! -z "$disk_model" ]; then
-                    disk_model=$(sanityse_output "$disk_model")
+                    disk_model=$(sanitize_output "$disk_model")
                     echo "<item label=\"Modèle : $disk_model\" />"
                 fi
                 unset disk_vendor
                 disk_vendor=$(str_str "$line" "Vendor:")
                 if [ ! -z "$disk_vendor" ]; then
-                    disk_vendor=$(sanityse_output_with_quotes "$disk_vendor")
+                    disk_vendor=$(sanitize_output_with_quotes "$disk_vendor")
                     if [ "$disk_vendor" = "WDC" ]; then
                         disk_vendor="WDC (Western Digital Corporation)"
                     fi
@@ -49,7 +49,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset disk_serial
                 disk_serial=$(udevadm info --query=all --name=$disk_device_file_suffix | grep ID_SERIAL_SHORT | sed -n -e 's/^.*ID_SERIAL_SHORT=//p' 2>/dev/null)
                 if [ ! -z "$disk_serial" ]; then
-                    disk_serial=$(sanityse_output "$disk_serial")
+                    disk_serial=$(sanitize_output "$disk_serial")
                     echo "<item label=\"N° de série : $disk_serial\" />"
                 fi
                 unset disk_type disk_type_temp
@@ -73,10 +73,10 @@ if [ -e "${default_path}hwinfo" ]; then
                         fi
                     fi
                 fi
-                disk_device_file=$(sanityse_output "$disk_device_file")
+                disk_device_file=$(sanitize_output "$disk_device_file")
                 echo "<item label=\"Fichier : $disk_device_file\" />"
                 if [ ! -z "$disk_type" ]; then
-                    disk_type=$(sanityse_output "$disk_type")
+                    disk_type=$(sanitize_output "$disk_type")
                     echo "<item label=\"Type : $disk_type\" />"
                 fi
                 unset disk_capacity
@@ -85,20 +85,20 @@ if [ -e "${default_path}hwinfo" ]; then
                     unset disk_capacity_total disk_capacity_real
                     disk_capacity_total=$(echo $disk_capacity | cut -d '/' -f1)
                     disk_capacity_real=$(echo $disk_capacity | cut -d '/' -f2)
-                    disk_capacity_total=$(sanityse_output "$disk_capacity_total")
-                    disk_capacity_real=$(sanityse_output "$disk_capacity_real")
+                    disk_capacity_total=$(sanitize_output "$disk_capacity_total")
+                    disk_capacity_real=$(sanitize_output "$disk_capacity_real")
                     echo "<item label=\"Capacité : $disk_capacity_real [$disk_capacity_total]\" />"
                 else
                     disk_capacity=$(lsblk -dno SIZE $disk_device_file 2>/dev/null)
                     if [ ! -z "$disk_capacity" ]; then
-                        disk_capacity=$(sanityse_output "$disk_capacity")
+                        disk_capacity=$(sanitize_output "$disk_capacity")
                         echo "<item label=\"Capacité : $disk_capacity\" />"
                     fi
                 fi
                 unset disk_driver
                 disk_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
                 if [ ! -z "$disk_driver" ]; then
-                    disk_driver=$(sanityse_output "$disk_driver")
+                    disk_driver=$(sanitize_output "$disk_driver")
                 fi
                 unset disk_driver_status_all
                 disk_driver_status_all=$(str_str "$line" "Driver Status:")
@@ -109,22 +109,22 @@ if [ -e "${default_path}hwinfo" ]; then
                         unset driver_new
                         if [[ "$status" =~ "is active" ]]; then
                             driver_new=$(echo "$status" | sed 's/is active//g')
-                            driver_new=$(sanityse_output "$driver_new")
+                            driver_new=$(sanitize_output "$driver_new")
                             disk_driver_status=$(echo "$disk_driver_status,$driver_new")
                             disk_status=$(echo "$disk_status,$driver_new actif")
                         elif [[ "$status" =~ "are active" ]]; then
                             driver_new=$(echo "$status" | sed 's/are active//g')
-                            driver_new=$(sanityse_output "$driver_new")
+                            driver_new=$(sanitize_output "$driver_new")
                             disk_driver_status=$(echo "$disk_driver_status,$driver_new")
                             disk_status=$(echo "$disk_status,$driver_new actifs")
                         elif [[ "$status" =~ "is not active" ]]; then
                             driver_new=$(echo "$status" | sed 's/is not active//g')
-                            driver_new=$(sanityse_output "$driver_new")
+                            driver_new=$(sanitize_output "$driver_new")
                             disk_driver_status=$(echo "$disk_driver_status,$driver_new")
                             disk_status=$(echo "$disk_status,$driver_new inactif")
                         elif [[ "$status" =~ "are not active" ]]; then
                             driver_new=$(echo "$status" | sed 's/are not active//g')
-                            driver_new=$(sanityse_output "$driver_new")
+                            driver_new=$(sanitize_output "$driver_new")
                             disk_driver_status=$(echo "$disk_driver_status,$driver_new")
                             disk_status=$(echo "$disk_status,$driver_new inactifs")
                         fi
@@ -135,7 +135,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 unset disk_driver_modules
                 disk_driver_modules=$(str_str "$line" "Driver Modules:")
                 if [ ! -z "$disk_driver_modules" ]; then
-                    disk_driver_modules=$(sanityse_output "$disk_driver_modules")
+                    disk_driver_modules=$(sanitize_output "$disk_driver_modules")
                 fi
                 if [ -z "$disk_driver" ] && [ ! -z "$disk_driver_status" ]; then
                     echo "<item label=\"Driver(s) : $disk_driver_status\" />"
