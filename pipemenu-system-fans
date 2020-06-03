@@ -1,0 +1,43 @@
+#!/bin/bash
+. pipemenu-default-commands
+. pipemenu-system-functions
+
+echo "<openbox_pipe_menu>"
+
+unset is_fan
+if [ -e "${default_path}sensors" ]; then
+    # Requiert l'installation du paquet lm-sensors
+    while read -r line; do
+        unset fan_speed
+        fan_speed=$(echo "$line" | cut -d ':' -f2 | awk '{print $1}')
+        if [ "$fan_speed" != "0" ]; then
+            fan_speed=$(sanityse_output "$fan_speed")
+            is_fan=1
+            unset fan_device fan_min fan_max
+            fan_device=$(echo "$line" | cut -d ':' -f1)
+            fan_device=$(sanityse_output "$fan_device")
+            echo "<separator label=\"$fan_device\" />"
+            fan_min=$(echo "$line" | grep -ioP 'min\K.*' | awk '{print $2}')
+            fan_max=$(echo "$line" | grep -ioP 'max\K.*' | awk '{print $2}')
+            if [ ! -z "$fan_min" ] && [ ! -z "$fan_max" ]; then
+                fan_min=$(sanityse_output "$fan_min")
+                fan_max=$(sanityse_output "$fan_max")
+                echo "<item label=\"Vitesse : $fan_speed RPM (min. $fan_min RPM, max. $fan_max RPM)\" />"
+            elif [ ! -z "$fan_min" ]; then
+                fan_min=$(sanityse_output "$fan_min")
+                echo "<item label=\"Vitesse : $fan_speed RPM (min. $fan_min RPM)\" />"
+            elif [ ! -z "$fan_max" ]; then
+                fan_max=$(sanityse_output "$fan_max")
+                echo "<item label=\"Vitesse : $fan_speed RPM (max. $fan_max RPM)\" />"
+            else
+                echo "<item label=\"Vitesse : $fan_speed RPM\" />"
+            fi
+        fi
+    done < <(${default_path}sensors | grep -i "FAN speed")
+fi
+
+if [ -z "$is_fan" ]; then
+    echo "<item label=\"Aucun ventilateur détecté.\" />"
+fi
+
+echo "</openbox_pipe_menu>"

@@ -24,6 +24,8 @@ if [ -e "${default_path}sensors" ]; then
     
     # Températures
     echo "<menu execute=\"${scripts_path}pipemenu-system-temperature\" id=\"system-temperature\" label=\"Températures\" />"
+    # Ventilateurs
+    echo "<menu execute=\"${scripts_path}pipemenu-system-fans\" id=\"system-fans\" label=\"Ventilateurs\" />"
 fi
 
 echo "</openbox_pipe_menu>"
