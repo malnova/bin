@@ -57,9 +57,11 @@ pacman_log=$(sed -n -e "/\[$run_date.*\] \[PACMAN\] Running '.*pacman.*'/,\${/.*
 
 # Vérifier si certains paquets sont orphelins
 while read -r line; do
-    has_deps=$( /usr/bin/pacman -Rcsp "$line" | wc -l )
-    if [ $has_deps -eq 1 ]; then
-        echo -e "${bold}Le paquet $line est orphelin et peut être supprimé : sudo pacman -Rcns ${line}${reset}"
+    if [ ! -z "$line" ]; then
+        has_deps=$( /usr/bin/pacman -Rcsp "$line" | wc -l )
+        if [ $has_deps -eq 1 ]; then
+            echo -e "${bold}Le paquet $line est orphelin et peut être supprimé : sudo pacman -Rcns ${line}${reset}"
+        fi
     fi
 done <<< "$( /usr/bin/pacman -Qtdq )"
 
