@@ -2,7 +2,7 @@
 # Inspiré par pacnanny : https://github.com/brandoninvergo/pacnanny
 date_format='%Y-%m-%d %H:%M:%S'
 update_command="/usr/bin/trizen -Syu"
-news_url="https://www.archlinux.org/feeds/news/"
+news_url="https://archlinux.org/feeds/news/"
 pacman_log='/var/log/pacman.log'
 bold=$(tput bold)
 italic=$(tput sitm)
