@@ -25,8 +25,9 @@ if [ $? -eq 0 ]; then
         pubDate_ts=$(TZ=UTC date -d "$pubDate_date" '+%s')
         pubDate_readable=$(TZ=CET date -d "@$pubDate_ts" "+$date_format")
         title=$(echo "$item" | sed -e 's/.*<title>\(.*\)<\/title>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
+        creator=$(echo "$item" | sed -e 's/.*<dc:creator.*>\(.*\)<\/dc:creator>.*/\1/')
         if [ "$pubDate_ts" -ge "$last_update_ts" ]; then
-            echo -e "${bold}${yellow}${pubDate_readable} ${title}${nocolor}${reset}"
+            echo -e "${bold}${yellow}${pubDate_readable} ${title} (${creator})${nocolor}${reset}"
             description=$(echo "$item" | sed -e 's/.*<description>\(.*\)<\/description>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
             # Remplacer les balises de liens <a href=""> par la couleur bleue
             description=$(echo "$description" | sed 's/<a href="[^>]*>/\\033[1;34m/g;s/<\/a>/\\033[0m/g')
@@ -36,17 +37,37 @@ if [ $? -eq 0 ]; then
             description=$(echo "$description" | sed "s/<strong>/$bold/g;s/<\/strong>/$reset/g")
             # Remplacer les balises <em> par une mise en italique
             description=$(echo "$description" | sed "s/<em>/$italic/g;s/<\/em>/$reset/g")
+            # Remplacer les balises <br>, </p> et </pre> par un saut de ligne
+            description=$(echo "$description" | sed "s/<br>/\\n/g;s/<br \/>/\\n/g;s/<\/p> /\\n/g;s/<\/pre> /\\n/g")
             # Supprimer toutes les autres balises HTML
             description=$(echo "$description" | sed -e 's/<[^>]*>//g')
             echo -e "$description"
-            #creator=$(echo "$item" | sed -e 's/.*<dc:creator.*>\(.*\)<\/dc:creator>.*/\1/')
         else
-            echo "$pubDate_readable $title"
+            echo "$pubDate_readable $title ($creator)"
         fi
     done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n $news_nb)
 else
     echo "Erreur : impossible de charger la page $news_url."
 fi
+
+function finish {
+    # Affichage des fichiers .pacnew et .pacsave
+    pacnews=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacnew")
+    if [ "x$pacnews" != "x" ]; then
+        echo -e "${bold}${yellow}De nouveaux fichiers .pacnew ont été créés :\n${pacnews}${nocolor}${reset}"
+    fi
+    pacsaves=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacsave")
+    if [ "x$pacsaves" != "x" ]; then
+        echo -e "${bold}${yellow}De nouveaux fichiers .pacsave ont été créés :\n${pacsaves}${nocolor}${reset}"
+    fi
+
+    # Récapitulatif des warnings
+    warnings=$(echo "$pacman_log" | grep 'warning: ')
+    if [ "x$warnings" != "x" ]; then
+        echo -e "${bold}${yellow}Récapitulatif des warnings :\n${warnings}${nocolor}${reset}"
+    fi
+}
+trap finish EXIT
 
 # Lancer la mise à jour d'Arch
 run_date=`date '+%Y-%m-%dT%H:%M'`
@@ -77,20 +98,4 @@ if command -v /usr/bin/paccache >/dev/null 2>&1; then
     fi
 else
     echo -e "${bold}${yellow}Le paquet pacman-contrib (fournissant la commande paccache) n'est pas installé. Le nettoyage du cache de pacman ne peut être effectué.${nocolor}${reset}"
-fi
-
-# Affichage des fichiers .pacnew et .pacsave
-pacnews=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacnew")
-if [ "x$pacnews" != "x" ]; then
-    echo -e "${bold}${yellow}De nouveaux fichiers .pacnew ont été créés :\n${pacnews}${nocolor}${reset}"
-fi
-pacsaves=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacsave")
-if [ "x$pacsaves" != "x" ]; then
-    echo -e "${bold}${yellow}De nouveaux fichiers .pacsave ont été créés :\n${pacsaves}${nocolor}${reset}"
-fi
-
-# Récapitulatif des warnings
-warnings=$(echo "$pacman_log" | grep 'warning: ')
-if [ "x$warnings" != "x" ]; then
-    echo -e "${bold}${yellow}Récapitulatif des warnings :\n${warnings}${nocolor}${reset}"
 fi
