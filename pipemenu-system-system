@@ -40,14 +40,14 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-system" ]; then
     if [ ! -z "$system" ]; then
         unset system_manufacturer
         system_manufacturer=$(echo "$system" | grep -ioP '^\s*Manufacturer:\K.*')
-        if [ ! -z "$system_manufacturer" ]; then
+        if [ ! -z "$system_manufacturer" ] && [[ ! "$system_manufacturer" =~ "System manufacturer" ]]; then
             is_system=1
             system_manufacturer=$(sanitize_output "$system_manufacturer")
             echo "<item label=\"Fabricant : $system_manufacturer\" />"
         fi
         unset system_serial_number
         system_serial_number=$(echo "$system" | grep -ioP '^\s*Serial Number:\K.*')
-        if [ ! -z "$system_serial_number" ]; then
+        if [ ! -z "$system_serial_number" ] && [[ ! "$system_serial_number" =~ "System Serial Number" ]]; then
             is_system=1
             system_serial_number=$(sanitize_output "$system_serial_number")
             echo "<item label=\"N° de série : $system_serial_number\" />"
