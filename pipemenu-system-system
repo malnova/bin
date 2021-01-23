@@ -33,10 +33,32 @@ if [ -e "/sys/devices/virtual/dmi/id/product_name" ]; then
     fi
 fi
 
+# Fabricant et numéro de série
+if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-system" ]; then
+    unset system
+    system=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-system)
+    if [ ! -z "$system" ]; then
+        unset system_manufacturer
+        system_manufacturer=$(echo "$system" | grep -ioP '^\s*Manufacturer:\K.*')
+        if [ ! -z "$system_manufacturer" ]; then
+            is_system=1
+            system_manufacturer=$(sanitize_output "$system_manufacturer")
+            echo "<item label=\"Fabricant : $system_manufacturer\" />"
+        fi
+        unset system_serial_number
+        system_serial_number=$(echo "$system" | grep -ioP '^\s*Serial Number:\K.*')
+        if [ ! -z "$system_serial_number" ]; then
+            is_system=1
+            system_serial_number=$(sanitize_output "$system_serial_number")
+            echo "<item label=\"N° de série : $system_serial_number\" />"
+        fi
+    fi
+fi
+
 # Nom d'hôte (hostname)
 unset system_host
 if [ -e "${default_path}hostname" ]; then
-    system_host=$(hostname)
+    system_host=$(${default_path}hostname)
 else
     system_host="$HOSTNAME"
 fi
@@ -49,7 +71,7 @@ fi
 # Domaine
 unset system_domain
 if [ -e "${default_path}dnsdomainname" ]; then
-    system_domain=$(dnsdomainname)
+    system_domain=$(${default_path}dnsdomainname)
     if [ ! -z "$system_domain" ]; then
         is_system=1
         system_domain=$(sanitize_output "$system_domain")
@@ -105,19 +127,6 @@ if [ ! -z "$system_version" ]; then
     echo "<item label=\"Version : $system_version\" />"
 fi
 
-# Date d'installation
-unset system_date
-if [ -e "/var/log/pacman.log" ]; then
-    unset system_date
-    system_date=$(sed -n "/ installed $1/{s/].*/]/p;q}" /var/log/pacman.log | tr -d '[]')
-    system_date=$(TZ=CET date -d "$system_date" +'%d %b %Y')
-    if [ ! -z "$system_date" ]; then
-        is_system=1
-        system_date=$(sanitize_output "$system_date")
-        echo "<item label=\"Date d'installation : $system_date\" />"
-    fi
-fi
-
 # Version du noyau (kernel)
 unset system_kernel
 system_kernel=$(${default_path}uname -r)
@@ -142,6 +151,30 @@ if [ ! -z "$system_arch" ]; then
         is_system=1
         system_arch=$(sanitize_output "$system_arch")
         echo "<item label=\"Architecture : $system_arch\" />"
+    fi
+fi
+
+# Date d'installation
+if [ -e "/var/log/pacman.log" ]; then
+    unset system_date
+    system_date=$(sed -n "/ installed $1/{s/].*/]/p;q}" /var/log/pacman.log | tr -d '[]')
+    system_date=$(TZ=CET date -d "$system_date" +'%d %b %Y')
+    if [ ! -z "$system_date" ]; then
+        is_system=1
+        system_date=$(sanitize_output "$system_date")
+        echo "<item label=\"Date d'installation : $system_date\" />"
+    fi
+fi
+
+# Date de dernière mise à jour complète
+if [ -e "/var/log/pacman.log" ]; then
+    unset system_last_update
+    system_last_update=$(grep 'full system upgrade' /var/log/pacman.log | tail -n1 | cut -d '[' -f2 | cut -d ']' -f1)
+    system_last_update=$(TZ=CET date -d "$system_last_update" +'%d %b %Y à %H:%M:%S')
+    if [ ! -z "$system_last_update" ]; then
+        is_system=1
+        system_last_update=$(sanitize_output "$system_last_update")
+        echo "<item label=\"Dernière màj complète : $system_last_update\" />"
     fi
 fi
 
@@ -175,6 +208,22 @@ if [ -e "/proc/uptime" ]; then
             system_uptime=$(sanitize_output "$system_uptime")
             echo "<item label=\"Uptime : $system_uptime\" />"
         fi
+    fi
+fi
+
+# Session précédente
+if [ -e "${default_path}last" ]; then
+    unset system_previous_session system_previous_session_from system_previous_session_to
+    system_previous_session=$(${default_path}last --time-format iso -2 reboot | grep -i 'reboot' | tail -n1 | awk -F'   ' '{print $NF}')
+    system_previous_session_from=$(echo "$system_previous_session" | cut -d ' ' -f1)
+    system_previous_session_from=$(TZ=CET date -d "$system_previous_session_from" +'%d/%m/%y %H:%M')
+    system_previous_session_to=$(echo "$system_previous_session" | awk -F' - ' '{print $2}' | cut -d ' ' -f1)
+    system_previous_session_to=$(TZ=CET date -d "$system_previous_session_to" +'%d/%m/%y %H:%M')
+    if [ ! -z "$system_previous_session_from" ] && [ ! -z "$system_previous_session_to" ]; then
+        is_system=1
+        system_previous_session_from=$(sanitize_output "$system_previous_session_from")
+        system_previous_session_to=$(sanitize_output "$system_previous_session_to")
+        echo "<item label=\"Session précédente : $system_previous_session_from - $system_previous_session_to\" />"
     fi
 fi
 
@@ -459,6 +508,11 @@ fi
 
 if [ -z "$is_system" ]; then
     echo "<item label=\"Aucune information récupérée.\" />"
+else
+    if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-system" ]; then
+        echo "<separator />"
+        echo "<item label=\"Afficher plus d'informations (dmidecode)\"><action name=\"Execute\"><command>$(cat_file "${scripts_path}pipemenu-system-hardware-dmidecode-system")</command></action></item>"
+    fi
 fi
 
 echo "</openbox_pipe_menu>"

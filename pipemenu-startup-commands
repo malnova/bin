@@ -5,4 +5,5 @@ if [ -e "${default_path}dmidecode" ]; then
     ${default_path}dmidecode --type baseboard > ${scripts_path}pipemenu-system-hardware-dmidecode-baseboard
     ${default_path}dmidecode --type bios > ${scripts_path}pipemenu-system-hardware-dmidecode-bios
     ${default_path}dmidecode --type memory > ${scripts_path}pipemenu-system-hardware-dmidecode-memory
+    ${default_path}dmidecode --type system > ${scripts_path}pipemenu-system-hardware-dmidecode-system
 fi
