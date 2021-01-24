@@ -7,25 +7,8 @@ echo "<openbox_pipe_menu>"
 unset is_ram
 if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     IFS=$' '
-    x=0
     unset ram
     ram=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-memory)
-    unset ram_slot_total
-    ram_slot_total=$(echo "$ram" | grep -ioP '^\s*Number Of Devices:\K.*')
-    if [ ! -z "$ram_slot_total" ]; then
-        is_ram=1
-        ram_slot_total=$(sanitize_output "$ram_slot_total")
-        echo "<item label=\"Nombre total de slots : $ram_slot_total\" />"
-        ram_slot_used=$(echo "$ram" | grep -cioP '^\tPart Number: (?!\[Empty\])')
-        ram_slot_unused=$(echo "$ram" | grep -ci 'No Module Installed')
-        ram_slot_used=$(( ram_slot_used - ram_slot_unused ))
-        ram_slot_used=$(sanitize_output "$ram_slot_used")
-        echo "<item label=\"Nombre de slots utilisés : $ram_slot_used\" />"
-        ram_slot_free=$(( ram_slot_total - ram_slot_used ))
-        ram_slot_free=$(sanitize_output "$ram_slot_free")
-        echo "<item label=\"Nombre de slots libres : $ram_slot_free\" />"
-        ((x++))
-    fi
     y=0
     unset ram_capacity_max
     ram_capacity_max=$(echo "$ram" | grep -ioP '^\s*Maximum Capacity:\K.*')
@@ -36,10 +19,6 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     ram_memory_size_max=$(echo "$ram_memory_size_max" | grep -Eo '[0-9]+')
     if [ ! -z "$ram_capacity_max" ]; then
         is_ram=1
-        if [ "$x" -gt 0 ]; then
-            unset is_ram
-            echo "<separator />"
-        fi
         if [ -z "$ram_memory_size_max" ] || [[ "$ram_capacity_max" == "$ram_memory_size_max" ]]; then
             echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit\" />"
         else
@@ -53,7 +32,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     ram_capacity_used=$(echo "$ram_capacity_used" | grep -Eo '[0-9]+')
     if [ ! -z "$ram_capacity_used" ] && [ ! -z "$ram_capacity_used_unit" ]; then
         is_ram=1
-        if [ "$x" -gt 0 ] && [ "$y" -eq 0 ]; then
+        if [ "$y" -eq 0 ]; then
             unset is_ram
             echo "<separator />"
         fi
@@ -65,7 +44,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     ram_supported_types=$(echo "$ram" | sed -n '/Supported Memory Types:/,/Memory Module Voltage/{ /Supported Memory Types:/d; /Memory Module Voltage/d; p }' | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/' | sed 's/,/, /g')
     if [ ! -z "$ram_supported_types" ]; then
         is_ram=1
-        if [ "$x" -gt 0 ] && [ "$y" -eq 0 ]; then
+        if [ "$y" -eq 0 ]; then
             unset is_ram
             echo "<separator />"
         fi
@@ -83,12 +62,14 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             ram_locators="${ram_locators}"$'\n'"${ram_socket}: ${ram_socket_type}"
         fi
     done < <(echo "$ram" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+    unset ram_locators_used_nb ram_locators_unused ram_locators_unused_nb
     while read -d $'\xBF' line; do
         if [[ "$line" =~ "DMI type 17" ]] && [[ ! "$line" =~ "No Module Installed" ]]; then
             unset ram_locator
             ram_locator=$(echo "$line" | grep -ioP '^\s*Locator:\K.*')
             if [ ! -z "$ram_locator" ]; then
                 is_ram=1
+                ((ram_locators_used_nb++))
                 ram_locator=$(sanitize_output "$ram_locator")
                 while read -r locators; do
                     if [[ "$locators" =~ ^$ram_locator':' ]]; then
@@ -103,7 +84,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
                 fi
                 z=0
             else
-                if ([ "$z" -eq 0 ] && ([ "$x" -gt 0 ] || [ "$y" -gt 0 ])) || [ "$z" -gt 0 ]; then
+                if ([ "$z" -eq 0 ] && [ "$y" -gt 0 ]) || [ "$z" -gt 0 ]; then
                     echo "<separator />"
                     z=0
                 fi
@@ -165,9 +146,40 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
                 echo "<item label=\"Référence : $ram_part_number\" />"
                 ((z++))
             fi
+        elif [[ "$line" =~ "DMI type 17" ]] && [[ "$line" =~ "No Module Installed" ]]; then
+            unset ram_locator_unused
+            ram_locator_unused=$(echo "$line" | grep -ioP '^\s*Locator:\K.*')
+            if [ ! -z "$ram_locator_unused" ]; then
+                is_ram=1
+                ((ram_locators_unused_nb++))
+                ram_locator_unused=$(sanitize_output "$ram_locator_unused")
+                if [ ! -z "$ram_locators_unused" ]; then
+                    ram_locators_unused="$ram_locators_unused,$ram_locator_unused"
+                else
+                    ram_locators_unused="$ram_locator_unused"
+                fi
+            fi
         fi
     done < <(echo "$ram" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
     unset IFS
+    if [ ! -z "$is_ram" ]; then
+        echo "<separator />"
+    fi
+    if [ "$ram_locators_used_nb" -gt 0 ]; then
+        is_ram=1
+        ram_locators_nb=$(( $ram_locators_used_nb + $ram_locators_unused_nb))
+        echo "<item label=\"Nombre total de slots (emplacements) : $ram_locators_nb\" />"
+        echo "<item label=\"Nombre de slots utilisés : $ram_locators_used_nb\" />"
+    fi
+    if [ "$ram_locators_unused_nb" -gt 0 ]; then
+        is_ram=1
+        echo "<item label=\"Nombre de slots libres : $ram_locators_unused_nb\" />"
+        if [ "$ram_locators_unused_nb" -eq 1 ]; then
+            echo "<item label=\"Slot libre : $ram_locators_unused\" />"
+        else
+            echo "<item label=\"Slots libres : $ram_locators_unused\" />"
+        fi
+    fi
     if [ ! -z "$is_ram" ]; then
         echo "<separator />"
         echo "<item label=\"Afficher plus d'informations (dmidecode)\"><action name=\"Execute\"><command>$(cat_file "${scripts_path}pipemenu-system-hardware-dmidecode-memory")</command></action></item>"
