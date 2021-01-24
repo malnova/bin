@@ -33,7 +33,7 @@ if [ -e "${default_path}hwinfo" ]; then
         fi
         if [ ! -z "$screen_serial" ]; then
             screen_serial=$(sanitize_output "$screen_serial")
-            echo "<item label=\"N° de série : $screen_vendor\" />"
+            echo "<item label=\"N° de série : $screen_serial\" />"
         fi
         if [ ! -z "$screen_year" ] && [ "$screen_year" -gt 0 ]; then
             if [ ! -z "$screen_week" ] && [ "$screen_week" -gt 0 ]; then
