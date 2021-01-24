@@ -40,29 +40,25 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             unset is_ram
             echo "<separator />"
         fi
-        if [[ "$ram_capacity_max_unit" = "GB" ]]; then
-            ram_capacity_max=$(( ram_capacity_max * 1024 ))
-        fi
-        if [[ "$ram_memory_size_max_unit" = "GB" ]]; then
-            ram_memory_size_max=$(( ram_memory_size_max * 1024 ))
-        fi
         if [ -z "$ram_memory_size_max" ] || [[ "$ram_capacity_max" == "$ram_memory_size_max" ]]; then
-            echo "<item label=\"Capacité maximale : $ram_capacity_max Mo\" />"
+            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit\" />"
         else
-            echo "<item label=\"Capacité maximale : $ram_capacity_max Mo (ou $ram_memory_size_max Mo)\" />"
+            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit (ou $ram_memory_size_max $ram_memory_size_max_unit)\" />"
         fi
         ((y++))
     fi
     unset ram_capacity_used
-    ram_capacity_used=$(echo "$ram" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
-    if [ ! -z "$ram_capacity_used" ]; then
+    ram_capacity_used=$(echo "$ram" | grep -ioP '^\s*Size:\K.*')
+    ram_capacity_used_unit=$(echo "$ram_capacity_used" | awk 'NF>1{print $NF}' | grep -E 'KB|MB|GB|TB' | head -n1)
+    ram_capacity_used=$(echo "$ram_capacity_used" | grep -Eo '[0-9]+')
+    if [ ! -z "$ram_capacity_used" ] && [ ! -z "$ram_capacity_used_unit" ]; then
         is_ram=1
         if [ "$x" -gt 0 ] && [ "$y" -eq 0 ]; then
             unset is_ram
             echo "<separator />"
         fi
         ram_capacity_used=$(echo "$ram_capacity_used" | awk '{ SUM += $1} END { print SUM }')
-        echo "<item label=\"Capacité utilisée : $ram_capacity_used Mo\" />"
+        echo "<item label=\"Capacité utilisée : $ram_capacity_used $ram_capacity_used_unit\" />"
         ((y++))
     fi
     unset ram_supported_types
@@ -113,10 +109,12 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
                 fi
             fi
             unset ram_size
-            ram_size=$(echo "$line" | grep -ioP '^\s*Size:\K.*' | grep -Eo '[0-9]+')
+            ram_size=$(echo "$line" | grep -ioP '^\s*Size:\K.*')
+            ram_size_unit=$(echo "$ram_size" | awk 'NF>1{print $NF}')
+            ram_size=$(echo "$ram_size" | grep -Eo '[0-9]+')
             if [ ! -z "$ram_size" ]; then
                 is_ram=1
-                echo "<item label=\"Taille : $ram_size Mo\" />"
+                echo "<item label=\"Taille : $ram_size $ram_size_unit\" />"
                 ((z++))
             fi
             unset ram_form_factor
