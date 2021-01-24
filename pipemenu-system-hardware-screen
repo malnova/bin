@@ -130,7 +130,11 @@ if [ -e "${default_path}hwinfo" ]; then
     # Requiert l'installation du paquet hwinfo
     echo "<separator />"
     echo "<item label=\"Afficher plus d'informations (hwinfo)\"><action name=\"Execute\"><command>$(display_file "${default_path}hwinfo --monitor")</command></action></item>"
+else
+    echo "<separator />"
 fi
+echo "<item label=\"Afficher plus d'informations (xrandr)\"><action name=\"Execute\"><command>$(display_file "${default_path}xrandr")</command></action></item>"
+echo "<item label=\"Afficher encore plus d'informations (xrandr)\"><action name=\"Execute\"><command>$(display_file "${default_path}xrandr --verbose")</command></action></item>"
 
 echo "</openbox_pipe_menu>"
 unset IFS
