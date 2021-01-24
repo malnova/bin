@@ -168,7 +168,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     if [ "$ram_locators_used_nb" -gt 0 ]; then
         is_ram=1
         ram_locators_nb=$(( $ram_locators_used_nb + $ram_locators_unused_nb))
-        echo "<item label=\"Nombre total de slots (emplacements) : $ram_locators_nb\" />"
+        echo "<item label=\"Nombre d'emplacements physiques / slots : $ram_locators_nb\" />"
         echo "<item label=\"Nombre de slots utilisés : $ram_locators_used_nb\" />"
     fi
     if [ "$ram_locators_unused_nb" -gt 0 ]; then
