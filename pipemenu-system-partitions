@@ -23,7 +23,8 @@ else
 fi
 
 echo "<separator />"
-echo "<item label=\"Afficher les UUIDs\"><action name=\"Execute\"><command>$(display_file "${default_path}lsblk -f")</command></action></item>"
+echo "<item label=\"Afficher une vue d'ensemble\"><action name=\"Execute\"><command>$(display_file "${default_path}lsblk -o NAME,MODEL,TYPE,FSTYPE,LABEL,SIZE,FSAVAIL,MOUNTPOINT")</command></action></item>"
+echo "<item label=\"Afficher les UUIDs\"><action name=\"Execute\"><command>$(display_file "${default_path}lsblk -o NAME,TYPE,FSTYPE,LABEL,UUID,MOUNTPOINT")</command></action></item>"
 echo "<item label=\"Afficher toutes les partitions\"><action name=\"Execute\"><command>$(display_file "${default_path}df -h --output=source,fstype,size,used,avail,pcent,file,target")</command></action></item>"
 
 echo "</openbox_pipe_menu>"
