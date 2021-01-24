@@ -6,7 +6,44 @@ echo "<openbox_pipe_menu>"
 
 IFS=$' '
 unset is_screen
-if [ -e "/var/log/Xorg.0.log" ]; then
+if [ -e "${default_path}hwinfo" ]; then
+    # Requiert l'installation du paquet hwinfo
+    unset screens
+    screens="$(${default_path}hwinfo --monitor | sed -e '$a\ ' | awk -v RS="" -F'\n' -v OFS=" -,-,- " '{$1=$1} 1' | sed -r "s/ +([[:digit:]-]+)$/, \1/; s/ -,-,- +/${end_delimiter}/g" | grep -E '^[0-9]+: ' | sed 's/[^ ]* //' | sort)"
+    screen_nb=0
+    while IFS= read -r line; do
+        unset screen_model screen_vendor screen_serial screen_year screen_week
+        screen_model=$(str_str "$line" "Model:")
+        screen_vendor=$(str_str "$line" "Vendor:")
+        screen_serial=$(str_str "$line" "Serial ID:")
+        screen_year=$(str_str "$line" "Year of Manufacture:" | grep -Eo '[0-9]+' | head -n1)
+        screen_week=$(str_str "$line" "Week of Manufacture:" | grep -Eo '[0-9]+' | head -n1)
+        if [ ! -z "$screen_model" ] || [ ! -z "$screen_vendor" ] || [ ! -z "$screen_serial" ] || ([ ! -z "$screen_year" ] && [ "$screen_year" -gt 0 ]) || ([ ! -z "$screen_week" ] && [ "$screen_week" -gt 0 ]); then
+            is_screen=1
+            ((screen_nb++))
+            echo "<separator label=\"Écran $screen_nb\" />"
+        fi
+        if [ ! -z "$screen_model" ]; then
+            screen_model=$(sanitize_output "$screen_model")
+            echo "<item label=\"Modèle : $screen_model\" />"
+        fi
+        if [ ! -z "$screen_vendor" ]; then
+            screen_vendor=$(sanitize_output_with_quotes "$screen_vendor")
+            echo "<item label=\"Fabricant : $screen_vendor\" />"
+        fi
+        if [ ! -z "$screen_serial" ]; then
+            screen_serial=$(sanitize_output "$screen_serial")
+            echo "<item label=\"N° de série : $screen_vendor\" />"
+        fi
+        if [ ! -z "$screen_year" ] && [ "$screen_year" -gt 0 ]; then
+            if [ ! -z "$screen_week" ] && [ "$screen_week" -gt 0 ]; then
+                echo "<item label=\"Date de fabrication : $screen_year (semaine $screen_week)\" />"
+            else
+                echo "<item label=\"Date de fabrication : $screen_year\" />"
+            fi
+        fi
+    done <<< "$screens"
+elif [ -e "/var/log/Xorg.0.log" ]; then
     unset screen_model screen_vendor
     screen_model=$(cat /var/log/Xorg.0.log | grep -ioP 'Monitor name:\K.*' | head -n1)
     screen_vendor=$(cat /var/log/Xorg.0.log | grep -ioP 'EDID vendor \K.*' | head -n1 | awk '{print $1;}' | sed -r "s/.*?([\"'])(.*)\1.*/\2/")
@@ -25,7 +62,6 @@ if [ -e "/var/log/Xorg.0.log" ]; then
     fi
 fi
 
-z=0
 unset screens
 screens=$(${default_path}xrandr | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
 unset screens_connected
