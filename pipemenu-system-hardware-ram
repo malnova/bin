@@ -9,50 +9,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     IFS=$' '
     unset ram
     ram=$(cat ${scripts_path}pipemenu-system-hardware-dmidecode-memory)
-    y=0
-    unset ram_capacity_max
-    ram_capacity_max=$(echo "$ram" | grep -ioP '^\s*Maximum Capacity:\K.*')
-    ram_capacity_max_unit=$(echo "$ram_capacity_max" | awk 'NF>1{print $NF}')
-    ram_capacity_max=$(echo "$ram_capacity_max" | grep -Eo '[0-9]+')
-    ram_memory_size_max=$(echo "$ram" | grep -ioP '^\s*Maximum Total Memory Size:\K.*')
-    ram_memory_size_max_unit=$(echo "$ram_memory_size_max" | awk 'NF>1{print $NF}')
-    ram_memory_size_max=$(echo "$ram_memory_size_max" | grep -Eo '[0-9]+')
-    if [ ! -z "$ram_capacity_max" ]; then
-        is_ram=1
-        if [ -z "$ram_memory_size_max" ] || [[ "$ram_capacity_max" == "$ram_memory_size_max" ]]; then
-            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit\" />"
-        else
-            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit (ou $ram_memory_size_max $ram_memory_size_max_unit)\" />"
-        fi
-        ((y++))
-    fi
-    unset ram_capacity_used
-    ram_capacity_used=$(echo "$ram" | grep -ioP '^\s*Size:\K.*')
-    ram_capacity_used_unit=$(echo "$ram_capacity_used" | awk 'NF>1{print $NF}' | grep -E 'KB|MB|GB|TB' | head -n1)
-    ram_capacity_used=$(echo "$ram_capacity_used" | grep -Eo '[0-9]+')
-    if [ ! -z "$ram_capacity_used" ] && [ ! -z "$ram_capacity_used_unit" ]; then
-        is_ram=1
-        if [ "$y" -eq 0 ]; then
-            unset is_ram
-            echo "<separator />"
-        fi
-        ram_capacity_used=$(echo "$ram_capacity_used" | awk '{ SUM += $1} END { print SUM }')
-        echo "<item label=\"Capacité utilisée : $ram_capacity_used $ram_capacity_used_unit\" />"
-        ((y++))
-    fi
-    unset ram_supported_types
-    ram_supported_types=$(echo "$ram" | sed -n '/Supported Memory Types:/,/Memory Module Voltage/{ /Supported Memory Types:/d; /Memory Module Voltage/d; p }' | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/' | sed 's/,/, /g')
-    if [ ! -z "$ram_supported_types" ]; then
-        is_ram=1
-        if [ "$y" -eq 0 ]; then
-            unset is_ram
-            echo "<separator />"
-        fi
-        ram_supported_types=$(sanitize_output "$ram_supported_types")
-        echo "<item label=\"Types supportés : ${ram_supported_types}\" />"
-        ((y++))
-    fi
-    
+
     z=0
     unset ram_locators
     while read -d $'\xBF' line; do
@@ -84,7 +41,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
                 fi
                 z=0
             else
-                if ([ "$z" -eq 0 ] && [ "$y" -gt 0 ]) || [ "$z" -gt 0 ]; then
+                if [ "$z" -gt 0 ]; then
                     echo "<separator />"
                     z=0
                 fi
@@ -165,14 +122,17 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
     if [ ! -z "$is_ram" ]; then
         echo "<separator />"
     fi
+    y=0
     if [ "$ram_locators_used_nb" -gt 0 ]; then
         is_ram=1
+        ((y++))
         ram_locators_nb=$(( $ram_locators_used_nb + $ram_locators_unused_nb))
         echo "<item label=\"Nombre d'emplacements physiques / slots : $ram_locators_nb\" />"
         echo "<item label=\"Nombre de slots utilisés : $ram_locators_used_nb\" />"
     fi
     if [ "$ram_locators_unused_nb" -gt 0 ]; then
         is_ram=1
+        ((y++))
         echo "<item label=\"Nombre de slots libres : $ram_locators_unused_nb\" />"
         if [ "$ram_locators_unused_nb" -eq 1 ]; then
             echo "<item label=\"Slot libre : $ram_locators_unused\" />"
@@ -180,10 +140,46 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             echo "<item label=\"Slots libres : $ram_locators_unused\" />"
         fi
     fi
+
+    if [ "$y" -gt 0 ]; then
+        echo "<separator />"
+    fi
+    unset ram_capacity_max
+    ram_capacity_max=$(echo "$ram" | grep -ioP '^\s*Maximum Capacity:\K.*')
+    ram_capacity_max_unit=$(echo "$ram_capacity_max" | awk 'NF>1{print $NF}')
+    ram_capacity_max=$(echo "$ram_capacity_max" | grep -Eo '[0-9]+')
+    ram_memory_size_max=$(echo "$ram" | grep -ioP '^\s*Maximum Total Memory Size:\K.*')
+    ram_memory_size_max_unit=$(echo "$ram_memory_size_max" | awk 'NF>1{print $NF}')
+    ram_memory_size_max=$(echo "$ram_memory_size_max" | grep -Eo '[0-9]+')
+    if [ ! -z "$ram_capacity_max" ]; then
+        is_ram=1
+        if [ -z "$ram_memory_size_max" ] || [[ "$ram_capacity_max" == "$ram_memory_size_max" ]]; then
+            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit\" />"
+        else
+            echo "<item label=\"Capacité maximale : $ram_capacity_max $ram_capacity_max_unit (ou $ram_memory_size_max $ram_memory_size_max_unit)\" />"
+        fi
+    fi
+    unset ram_capacity_used
+    ram_capacity_used=$(echo "$ram" | grep -ioP '^\s*Size:\K.*')
+    ram_capacity_used_unit=$(echo "$ram_capacity_used" | awk 'NF>1{print $NF}' | grep -E 'KB|MB|GB|TB' | head -n1)
+    ram_capacity_used=$(echo "$ram_capacity_used" | grep -Eo '[0-9]+')
+    if [ ! -z "$ram_capacity_used" ] && [ ! -z "$ram_capacity_used_unit" ]; then
+        is_ram=1
+        ram_capacity_used=$(echo "$ram_capacity_used" | awk '{ SUM += $1} END { print SUM }')
+        echo "<item label=\"Capacité utilisée : $ram_capacity_used $ram_capacity_used_unit\" />"
+    fi
+    unset ram_supported_types
+    ram_supported_types=$(echo "$ram" | sed -n '/Supported Memory Types:/,/Memory Module Voltage/{ /Supported Memory Types:/d; /Memory Module Voltage/d; p }' | awk -vORS=, '{ print $1 }' | sed 's/,$/\n/' | sed 's/,/, /g')
+    if [ ! -z "$ram_supported_types" ]; then
+        is_ram=1
+        ram_supported_types=$(sanitize_output "$ram_supported_types")
+        echo "<item label=\"Types supportés : ${ram_supported_types}\" />"
+    fi
+
     if [ ! -z "$is_ram" ]; then
         echo "<separator />"
-        echo "<item label=\"Afficher plus d'informations (dmidecode)\"><action name=\"Execute\"><command>$(cat_file "${scripts_path}pipemenu-system-hardware-dmidecode-memory")</command></action></item>"
     fi
+    echo "<item label=\"Afficher plus d'informations (dmidecode)\"><action name=\"Execute\"><command>$(cat_file "${scripts_path}pipemenu-system-hardware-dmidecode-memory")</command></action></item>"
 fi
 
 if [ -z "$is_ram" ]; then

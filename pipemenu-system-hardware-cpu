@@ -4,40 +4,15 @@
 
 echo "<openbox_pipe_menu>"
 
-unset is_cpu
-if [ -e "${default_path}lscpu" ]; then
-    IFS=$' '
-    cpu_nb=$(${default_path}lscpu | egrep 'Cœur|Socket|^CPU\(s)')
-    unset socket_nb
-    socket_nb=$(echo "$cpu_nb" | sed -n -e 's/^Socket.*://p')
-    if [ ! -z "$socket_nb" ]; then
-        is_cpu=1
-        socket_nb=$(sanitize_output "$socket_nb")
-        echo "<item label=\"Nombre d'emplacements physiques / sockets : $socket_nb\" />"
-    fi
-    unset core_nb
-    core_nb=$(echo "$cpu_nb" | sed -n -e 's/^Cœur.*://p')
-    if [ ! -z "$core_nb" ]; then
-        is_cpu=1
-        core_nb=$(sanitize_output "$core_nb")
-        echo "<item label=\"Nombre de cœurs : $core_nb\" />"
-    fi
-fi
-
 if [ -e "/proc/cpuinfo" ]; then
     cpu=$(cat /proc/cpuinfo)
-    unset cpu_nb_total
-    cpu_nb_total=$(echo "$cpu" | grep -cioP '^processor\s*:\K.*')
-    if [ ! -z "$cpu_nb_total" ]; then
-        is_cpu=1
-        cpu_nb_total=$(sanitize_output "$cpu_nb_total")
-        echo "<item label=\"Nombre total de processeurs : $cpu_nb_total\" />"
-    fi
+    cpu_nb_total=0
     while read -d $'\xBF' line; do
         unset cpu_nb
         cpu_nb=$(echo "$line" | grep -ioP '^processor\s*:\K.*')
         if [ ! -z "$cpu_nb" ]; then
             is_cpu=1
+            ((cpu_nb_total++))
             cpu_nb=$(sanitize_output "$cpu_nb")
             echo "<separator label=\"Processeur $cpu_nb\" />"
             unset cpu_model
@@ -76,6 +51,33 @@ if [ -e "/proc/cpuinfo" ]; then
         fi
     done < <(echo "$cpu" | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
     unset IFS
+fi
+
+if [ ! -z "$is_cpu" ]; then
+    echo "<separator />"
+fi
+unset is_cpu
+if [ -e "${default_path}lscpu" ]; then
+    IFS=$' '
+    cpu_nb=$(${default_path}lscpu | egrep 'Cœur|Socket|^CPU\(s)')
+    unset socket_nb
+    socket_nb=$(echo "$cpu_nb" | sed -n -e 's/^Socket.*://p')
+    if [ ! -z "$socket_nb" ]; then
+        is_cpu=1
+        socket_nb=$(sanitize_output "$socket_nb")
+        echo "<item label=\"Nombre d'emplacements physiques / sockets : $socket_nb\" />"
+    fi
+    unset core_nb
+    core_nb=$(echo "$cpu_nb" | sed -n -e 's/^Cœur.*://p')
+    if [ ! -z "$core_nb" ]; then
+        is_cpu=1
+        core_nb=$(sanitize_output "$core_nb")
+        echo "<item label=\"Nombre de cœurs : $core_nb\" />"
+    fi
+fi
+if [ "$cpu_nb_total" -gt 0 ]; then
+    is_cpu=1
+    echo "<item label=\"Nombre total de processeurs : $cpu_nb_total\" />"
 fi
 
 if [ ! -z "$is_cpu" ]; then
