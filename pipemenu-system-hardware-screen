@@ -64,6 +64,21 @@ fi
 
 unset screens
 screens=$(${default_path}xrandr | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
+unset screens_disconnected
+screens_disconnected=$(echo "$screens" | grep "disconnected")
+unset screens_disconnected_list
+while read -r screen_is_disconnected; do
+    unset screen_device
+    screen_device=$(echo "$screen_is_disconnected" | awk -F'disconnected' '{print $1}')
+    if [ ! -z "$screen_device" ]; then
+        screen_device=$(sanitize_output "$screen_device")
+        if [ ! -z "$screens_disconnected_list" ]; then
+            screens_disconnected_list="$screens_disconnected_list,$screen_device"
+        else
+            screens_disconnected_list="$screen_device"
+        fi
+    fi
+done <<< "$screens_disconnected"
 unset screens_connected
 screens_connected=$(echo "$screens" | grep " connected")
 while read -r screen_is_connected; do
@@ -124,6 +139,11 @@ done <<< "$screens_connected"
 
 if [ -z "$is_screen" ]; then
     echo "<item label=\"Aucun écran détecté.\" />"
+fi
+
+if [ ! -z "$screens_disconnected_list" ]; then
+    echo "<separator />"
+    echo "<item label=\"Ports inactifs : $screens_disconnected_list\" />"
 fi
 
 if [ -e "${default_path}hwinfo" ]; then
