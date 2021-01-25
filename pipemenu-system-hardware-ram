@@ -111,7 +111,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
                 ((ram_locators_unused_nb++))
                 ram_locator_unused=$(sanitize_output "$ram_locator_unused")
                 if [ ! -z "$ram_locators_unused" ]; then
-                    ram_locators_unused="$ram_locators_unused,$ram_locator_unused"
+                    ram_locators_unused="$ram_locators_unused, $ram_locator_unused"
                 else
                     ram_locators_unused="$ram_locator_unused"
                 fi

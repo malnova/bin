@@ -75,7 +75,7 @@ while read -r screen_is_disconnected; do
         ((screens_disconnected_nb++))
         screen_device=$(sanitize_output "$screen_device")
         if [ ! -z "$screens_disconnected_list" ]; then
-            screens_disconnected_list="$screens_disconnected_list,$screen_device"
+            screens_disconnected_list="$screens_disconnected_list, $screen_device"
         else
             screens_disconnected_list="$screen_device"
         fi
