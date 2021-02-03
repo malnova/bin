@@ -214,10 +214,13 @@ fi
 # Session précédente
 if [ -e "${default_path}last" ]; then
     unset system_previous_session system_previous_session_from system_previous_session_to
-    system_previous_session=$(${default_path}last --time-format iso -2 reboot | grep -i 'reboot' | tail -n1 | awk -F'   ' '{print $NF}')
-    system_previous_session_from=$(echo "$system_previous_session" | cut -d ' ' -f1)
+    #system_previous_session=$(${default_path}last --time-format iso -2 reboot | grep -i 'reboot' | tail -n1 | awk -F'   ' '{print $NF}')
+    system_previous_session=$(${default_path}last --time-format iso -2 -R reboot | grep -i 'reboot' | tail -n1)
+    #system_previous_session_from=$(echo "$system_previous_session" | cut -d ' ' -f1)
+    system_previous_session_from=$(echo "$system_previous_session" | awk '{print $4}')
     system_previous_session_from=$(TZ=CET date -d "$system_previous_session_from" +'%d/%m/%y %H:%M')
-    system_previous_session_to=$(echo "$system_previous_session" | awk -F' - ' '{print $2}' | cut -d ' ' -f1)
+    #system_previous_session_to=$(echo "$system_previous_session" | awk -F' - ' '{print $2}' | cut -d ' ' -f1)
+    system_previous_session_to=$(echo "$system_previous_session" | awk '{print $6}')
     system_previous_session_to=$(TZ=CET date -d "$system_previous_session_to" +'%d/%m/%y %H:%M')
     if [ ! -z "$system_previous_session_from" ] && [ ! -z "$system_previous_session_to" ]; then
         is_system=1
