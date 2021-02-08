@@ -18,7 +18,7 @@ else
     keyboard_variant=$(echo "$keyboard" | grep -ioP '^\s*Option "XkbVariant"\s*\K.*' | sed 's/\"//g')
 fi
 if [ "$keyboard_variant" = "" ]; then
-    $(urxvt -e /bin/bash -l -c "sleep .05; transset-df -a 0.85 > /dev/null 2>&1; /usr/local/bin/tmux new-session nvim /usr/share/X11/xkb/symbols/"$keyboard_layout)
+    $(st -e /bin/bash -l -c "sleep .05; transset-df -a 0.85 > /dev/null 2>&1; /usr/local/bin/tmux new-session nvim /usr/share/X11/xkb/symbols/"$keyboard_layout)
 else
-    $(urxvt -e /bin/bash -l -c 'sleep .05; transset-df -a 0.85 > /dev/null 2>&1; /usr/local/bin/tmux new-session nvim +/xkb_symbols\ \"'$keyboard_variant'\" /usr/share/X11/xkb/symbols/'$keyboard_layout)
+    $(st -e /bin/bash -l -c 'sleep .05; transset-df -a 0.85 > /dev/null 2>&1; /usr/local/bin/tmux new-session nvim +/xkb_symbols\ \"'$keyboard_variant'\" /usr/share/X11/xkb/symbols/'$keyboard_layout)
 fi
