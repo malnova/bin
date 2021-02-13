@@ -82,21 +82,6 @@ if [ -e "${default_path}hwinfo" ]; then
                         echo "<item label=\"Spectre de radiofréquences : $netcard_frequencies\" />"
                     fi
                 fi
-                unset netcard_iwconfig
-                netcard_iwconfig=$(iwconfig $netcard_device_file)
-                if [ ! -z "$netcard_iwconfig" ]; then
-                    unset netcard_frequency
-                    netcard_frequency=$(echo $netcard_iwconfig | grep -oP '(?<=Frequency:)[0-9.,]+ GHz')
-                    netcard_speed=$(echo $netcard_iwconfig | grep -oP '(?<=Bit Rate=)[0-9.,]+ Mb/s')
-                    if [ ! -z "$netcard_frequency" ]; then
-                        netcard_frequency=$(sanitize_output "$netcard_frequency")
-                        echo "<item label=\"Fréquence : $netcard_frequency\" />"
-                    fi
-                    if [ ! -z "$netcard_speed" ]; then
-                        netcard_speed=$(sanitize_output "$netcard_speed")
-                        echo "<item label=\"Vitesse : $netcard_speed\" />"
-                    fi
-                fi
             fi
             if [ -z "$netcard_speed" ]; then
                 netcard_speed=$(cat /sys/class/net/${netcard_device_file}/speed 2>/dev/null)

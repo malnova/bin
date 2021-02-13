@@ -9,7 +9,7 @@ if mkdir "$lock_dir" 2>/dev/null; then
     notification_off="Le wifi est désactivé."
 
     unset wifi_is_available wifi_status
-    wifi_is_available=$(/usr/bin/iwconfig 2>/dev/null | grep ESSID)
+    wifi_is_available=$(nmcli device 2>/dev/null | grep wifi)
     if [ -z "$wifi_is_available" ]; then
         dunstify -r 19127 -t 2000 "$notification_not_available"
     else
