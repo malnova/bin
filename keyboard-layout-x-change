@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 # Changer la disposition du clavier.
 # Permet de passer d'une disposition à l'autre parmi celles définies
 # dans le fichier /etc/X11/xorg.conf.d/00-keyboard.conf

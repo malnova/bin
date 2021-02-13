@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 
 file=1
 while [ "$file" ]; do
@@ -8,13 +8,8 @@ while [ "$file" ]; do
         if [ -d "$file" ]; then
             cd "$file"
         else [ -f "$file" ]
-            if which whippet &>/dev/null; then
-                exec /usr/bin/whippet -M "$owd/$file" &
-                unset file
-            elif which xdg-open &>/dev/null; then
-                exec /usr/bin/xdg-open "$owd/$file" &
-                unset file
-            fi
+            exec /usr/bin/xdg-open "$owd/$file">/dev/null 2>&1 &
+            unset file
         fi
     fi
 done

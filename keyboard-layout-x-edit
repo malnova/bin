@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 
 if [ -e "/usr/bin/xkblayout-state" ]; then
     # Nécessite l'application xkblayout-state compilée à partir de

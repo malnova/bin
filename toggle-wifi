@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 
 # Use mkdir as an atomic operation to avoid multiple scripts running at once
 lock_dir="/tmp/wifictl.exclusivelock"
