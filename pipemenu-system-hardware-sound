@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((sound_nb++))
+            z=$((z+1))
+            sound_nb=$((sound_nb+1))
         fi
         unset sound_model
         sound_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_sound=1
             sound_model=$(sanitize_output "$sound_model")
             echo "<item label=\"Modèle : $sound_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset sound_vendor
         sound_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_sound=1
             sound_vendor=$(sanitize_output_with_quotes "$sound_vendor")
             echo "<item label=\"Fabricant : $sound_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset sound_driver
         sound_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -86,30 +86,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ]; then
             is_sound=1
             echo "<item label=\"Driver(s) : $sound_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$sound_driver" ] && [ -z "$sound_driver_status" ]; then
             is_sound=1
             echo "<item label=\"Driver(s) : $sound_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ] && [ "$sound_driver" == "$sound_driver_status" ]; then
             is_sound=1
             echo "<item label=\"Driver(s) : $sound_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$sound_driver" ] && [ ! -z "$sound_driver_status" ] && [ "$sound_driver" != "$sound_driver_status" ]; then
             is_sound=1
             sound_driver=$(echo "$sound_driver ($sound_driver_status)")
             echo "<item label=\"Driver(s) : $sound_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$sound_driver_modules" ]; then
             is_sound=1
             echo "<item label=\"Module(s) : $sound_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$sound_status" ]; then
             is_sound=1
             echo "<item label=\"État : $sound_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$sounds"
     if [ ! -z "$is_sound" ]; then

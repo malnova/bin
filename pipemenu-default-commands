@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 
 # Centralisation de variables et de fonctions pour éviter des modifications
 # dans de trop nombreux fichiers en cas de changement de certains programmes
@@ -9,21 +9,21 @@ default_path="/usr/bin/"
 scripts_path="/usr/local/bin/"
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour éditer un fichier
-function edit_file() {
+edit_file() {
     echo "${scripts_path}st -e ${scripts_path}tmux new-session ${default_path}nvim ${1}"
 }
 
 # Écrire (ex. pipemenu) d'ouvrir un terminal pour lister le contenu d'un fichier
-function cat_file() {
+cat_file() {
     echo "${scripts_path}st -e ${scripts_path}tmux new-session '${default_path}cat ${1} | ${default_path}less'"
 }
 
 # Écrire d'ouvrir un terminal pour y lancer un programme
-function display_file() {
+display_file() {
     echo "${scripts_path}st -e ${scripts_path}tmux new-session '${1} | ${default_path}less'"
 }
 
 # Ouvrir un terminal pour éditer un fichier
-function direct_edit_file() {
+direct_edit_file() {
     ${scripts_path}st -e ${scripts_path}tmux new-session ${default_path}nvim "${1}"
 }

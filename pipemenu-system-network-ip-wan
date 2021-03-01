@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 . pipemenu-default-commands
 . pipemenu-system-functions
 
@@ -6,11 +6,13 @@ echo "<openbox_pipe_menu>"
 
 unset is_vpn
 if [ -e "${default_path}nmcli" ]; then
-    while read -r line; do
-        if [[ ! "$line" =~ ^-- ]]; then
-            is_vpn=true
-        fi
-    done < <(${default_path}nmcli -f DEVICE,TYPE con | grep "vpn")
+while IFS= read -r line; do
+    if echo "$line" | egrep -q '^--'; then
+        is_vpn=true
+    fi
+done <<-EOT
+    $(${default_path}nmcli -f DEVICE,TYPE con | grep 'vpn')
+EOT
 fi
 
 if [ -e "${default_path}ip" ] && [ -z "$is_vpn" ]; then
@@ -18,43 +20,20 @@ if [ -e "${default_path}ip" ] && [ -z "$is_vpn" ]; then
 fi
 
 if [ ! -z "$is_vpn" ] || [ "$is_connection" == "1" ]; then
-    ip_wan_dig=("myip.opendns.com @resolver1.opendns.com" "-t txt o-o.myaddr.l.google.com @ns1.google.com" "whoami.akamai.net. @ns1-1.akamaitech.net")
-    ip_wan_host=("myip.opendns.com resolver1.opendns.com" "-t txt o-o.myaddr.l.google.com ns1.google.com" "whoami.akamai.net. ns1-1.akamaitech.net")
-    ip_wan_curl=("https://ident.me/" "https://ip.tyk.nu/" "https://tnx.nl/ip" "https://wgetip.com/")
-    ip_wan_wget=("https://ip.tyk.nu/" "https://icanhazip.com/" "https://ipinfo.io/ip")
-    
     # Nombre de tentatives sur le même serveur
     nb_try=2
     # Temps maximum par tentative (avant connection timeout) en secondes
     max_time=20
-    
+
     unset ip_wan
-    if [ -e "${default_path}dig" ]; then
-        # Requiert l'installation du paquet dnsutils
-        z=0
-        while [ -z "$ip_wan" ]; do
-            ip_wan=$(${default_path}dig +short +time=$max_time +tries=$nb_try ${ip_wan_dig[$z]})
-            ((z++))
-        done
-    elif [ -e "${default_path}host" ]; then
-        z=0
-        while [ -z "$ip_wan" ]; do
-            ip_wan=$(${default_path}host -R $nb_try -W $max_time ${ip_wan_host[$z]} | grep -e "has address" -e "descriptive text" | grep -o "\([0-9]\{1,3\}\.\)\{3\}\([0-9]\{1,3\}\)")
-            ((z++))
-        done
-    elif [ -e "${default_path}curl" ]; then
-        z=0
+    if [ -e "${default_path}curl" ]; then
+        ip_wan_list="https://ident.me/\nhttps://ip.tyk.nu/\nhttps://wgetip.com/"
         # Requiert l'installation du paquet curl
-        while [ -z "$ip_wan" ]; do
-            ip_wan=$(${default_path}curl -s --retry $nb_try --max-time $max_time ${ip_wan_curl[$z]})
-            ((z++))
-        done
+        ip_wan=$(echo "$ip_wan_list" | while IFS= read -r line; do curl -s --fail --retry $nb_try --max-time $max_time $line; if [ $? -ne 78 ] && [ $? -ne 22 ]; then break; fi; done)
     else
-        z=0
-        while [ -z "$ip_wan" ]; do
-            ip_wan=$(${default_path}wget -t $nb_try -T $max_time ${ip_wan_wget[$z]} -O - -o /dev/null)
-            ((z++))
-        done
+        ip_wan_list="https://ip.tyk.nu/\nhttps://icanhazip.com/\nhttps://ipinfo.io/ip"
+        # Requiert l'installation du paquet wget
+        ip_wan=$(echo "$ip_wan_list" | while IFS= read -r line; do wget -t $nb_try -T $max_time $line -O - -o /dev/null; if [ $? -eq 0 ]; then break; fi; done)
     fi
     if [ ! -z "$ip_wan" ]; then
         ip_wan=$(sanitize_output "$ip_wan")

@@ -21,7 +21,7 @@ if [ -e "${default_path}upower" ]; then
             is_battery=1
             battery_model=$(sanitize_output "$battery_model")
             echo "<item label=\"Modèle : $battery_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset battery_path
         battery_path=$(echo "$line" | grep -ioP '^\s*native-path:\K.*' | awk '{print $1}')
@@ -38,7 +38,7 @@ if [ -e "${default_path}upower" ]; then
             fi
             battery_path=$(sanitize_output "$battery_path")
             echo "<item label=\"Chemin : $battery_path\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset battery_technology
         battery_technology=$(echo "$line" | grep -ioP '^\s*technology:\K.*')
@@ -46,7 +46,7 @@ if [ -e "${default_path}upower" ]; then
             is_battery=1
             battery_technology=$(sanitize_output "$battery_technology")
             echo "<item label=\"Technologie : $battery_technology\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset battery_status
         battery_status=$(echo "$line" | grep -ioP '^\s*state:\K.*')
@@ -54,7 +54,7 @@ if [ -e "${default_path}upower" ]; then
             is_battery=1
             battery_status=$(sanitize_output "$battery_status")
             echo "<item label=\"État : $battery_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset battery_percentage
         battery_percentage=$(echo "$line" | grep -ioP '^\s*percentage:\K.*')
@@ -62,7 +62,7 @@ if [ -e "${default_path}upower" ]; then
             is_battery=1
             battery_percentage=$(sanitize_output "$battery_percentage")
             echo "<item label=\"Niveau : $battery_percentage\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset battery_time
         battery_time=$(echo "$line" | grep -ioP '^\s*time to empty:\K.*')
@@ -70,7 +70,7 @@ if [ -e "${default_path}upower" ]; then
             is_battery=1
             battery_time=$(sanitize_output "$battery_time")
             echo "<item label=\"Temps restant : $battery_time\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done < <(${default_path}upower --dump | awk -v RS='\n\n' '{printf "%s\xBF", $0}')
     if [ ! -z "$is_battery" ]; then
@@ -96,7 +96,7 @@ else
                         is_battery=1
                         battery_model=$(sanitize_output "$battery_model")
                         echo "<item label=\"Modèle : $battery_model\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                     unset battery_manufacturer
                     battery_manufacturer=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_MANUFACTURER=\K.*')
@@ -104,7 +104,7 @@ else
                         is_battery=1
                         battery_manufacturer=$(sanitize_output_with_quotes "$battery_manufacturer")
                         echo "<item label=\"Fabricant : $battery_manufacturer\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                     unset battery_path
                     battery_path=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_NAME=\K.*')
@@ -112,7 +112,7 @@ else
                         is_battery=1
                         battery_path=$(sanitize_output "$battery_path")
                         echo "<item label=\"Chemin : $battery_path\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                     unset battery_technology
                     battery_technology=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_TECHNOLOGY=\K.*')
@@ -120,7 +120,7 @@ else
                         is_battery=1
                         battery_technology=$(sanitize_output "$battery_technology")
                         echo "<item label=\"Technologie : $battery_technology\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                     unset battery_status
                     battery_status=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_STATUS=\K.*')
@@ -128,7 +128,7 @@ else
                         is_battery=1
                         battery_status=$(sanitize_output "$battery_status")
                         echo "<item label=\"État : $battery_status\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                     unset battery_percentage
                     battery_percentage=$(echo "$battery" | grep -ioP 'POWER_SUPPLY_CAPACITY=\K.*')
@@ -136,7 +136,7 @@ else
                         is_battery=1
                         battery_percentage=$(sanitize_output "$battery_percentage")
                         echo "<item label=\"Niveau : ${battery_percentage}%\" />"
-                        ((z++))
+                        z=$((z+1))
                     fi
                 fi
             done <<< "$battery"

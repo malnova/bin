@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((printer_nb++))
+            z=$((z+1))
+            printer_nb=((printer_nb+1))
         fi
         unset printer_model
         printer_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_printer=1
             printer_model=$(sanitize_output "$printer_model")
             echo "<item label=\"Modèle : $printer_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset printer_vendor
         printer_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_printer=1
             printer_vendor=$(sanitize_output_with_quotes "$printer_vendor")
             echo "<item label=\"Fabricant : $printer_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset printer_driver
         printer_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -86,30 +86,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ]; then
             is_printer=1
             echo "<item label=\"Driver(s) : $printer_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$printer_driver" ] && [ -z "$printer_driver_status" ]; then
             is_printer=1
             echo "<item label=\"Driver(s) : $printer_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ] && [ "$printer_driver" == "$printer_driver_status" ]; then
             is_printer=1
             echo "<item label=\"Driver(s) : $printer_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$printer_driver" ] && [ ! -z "$printer_driver_status" ] && [ "$printer_driver" != "$printer_driver_status" ]; then
             is_printer=1
             printer_driver=$(echo "$printer_driver ($printer_driver_status)")
             echo "<item label=\"Driver(s) : $printer_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$printer_driver_modules" ]; then
             is_printer=1
             echo "<item label=\"Module(s) : $printer_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$printer_status" ]; then
             is_printer=1
             echo "<item label=\"État : $printer_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$printers"
     if [ ! -z "$is_printer" ]; then

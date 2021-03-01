@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((firewire_nb++))
+            z=$((z+1))
+            firewire_nb=$((firewire_nb+1))
         fi
         unset firewire_model
         firewire_model=$(str_str "$line" "Model:")

@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((netcard_nb++))
+            z=$((z+1))
+            netcard_nb=$((netcard_nb+1))
         fi
         unset netcard_model
         netcard_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_netcard=1
             netcard_model=$(sanitize_output "$netcard_model")
             echo "<item label=\"Modèle : $netcard_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset netcard_vendor
         netcard_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_netcard=1
             netcard_vendor=$(sanitize_output_with_quotes "$netcard_vendor")
             echo "<item label=\"Fabricant : $netcard_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset netcard_device_file
         netcard_device_file=$(str_str "$line" "Device File:")
@@ -63,7 +63,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 fi
             fi
             echo "<item label=\"Interface : $netcard_device_file\" />"
-            ((z++))
+            z=$((z+1))
             unset netcard_speed
             if [[ $netcard_device_file =~ ^wl ]] || [[ $netcard_device_file =~ ^ww ]]; then
                 if [ ! -z "$netcard_nm_properties" ]; then
@@ -139,30 +139,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$netcard_driver" ] && [ ! -z "$netcard_driver_status" ]; then
             is_netcard=1
             echo "<item label=\"Driver(s) : $netcard_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$netcard_driver" ] && [ -z "$netcard_driver_status" ]; then
             is_netcard=1
             echo "<item label=\"Driver(s) : $netcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$netcard_driver" ] && [ ! -z "$netcard_driver_status" ] && [ "$netcard_driver" == "$netcard_driver_status" ]; then
             is_netcard=1
             echo "<item label=\"Driver(s) : $netcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$netcard_driver" ] && [ ! -z "$netcard_driver_status" ] && [ "$netcard_driver" != "$netcard_driver_status" ]; then
             is_netcard=1
             netcard_driver=$(echo "$netcard_driver ($netcard_driver_status)")
             echo "<item label=\"Driver(s) : $netcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$netcard_driver_modules" ]; then
             is_netcard=1
             echo "<item label=\"Module(s) : $netcard_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$netcard_status" ]; then
             is_netcard=1
             echo "<item label=\"État : $netcard_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$netcards"
     if [ ! -z "$is_netcard" ]; then

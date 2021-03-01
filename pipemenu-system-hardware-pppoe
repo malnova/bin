@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((pppoe_nb++))
+            z=$((z+1))
+            pppoe_nb=$((pppoe_nb+1))
         fi
         unset pppoe_model
         pppoe_model=$(str_str "$line" "Model:")

@@ -14,7 +14,7 @@ if [ -e "$binds_file" ]; then
                 if [ ! -z "$is_keybinds" ]; then
                     echo "</menu>"
                 fi
-                ((z++))
+                z=$((z+1))
                 menu=$(echo "$line" | grep -ioP '^separator:\K.*')
                 echo "<menu id=\"pipemenu-keybinds-$z\" label=\"$menu\">"
             elif [[ "$line" =~ "separator=" ]]; then

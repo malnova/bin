@@ -149,7 +149,7 @@ if [ -e "${scripts_path}pipemenu-system-hardware-dmidecode-memory" ]; then
             fi
         fi
         if [ ! -z "${summary_sub_local_str}" ]; then
-            ((x++))
+            x=$((x+1))
             summary_sub_local_str="Emplacement ${x} : ${summary_sub_local_str}\n"
             summary_local_str="${summary_local_str}${summary_sub_local_str}"
             summary_local_str=$(sanitize_terminal_output "${summary_local_str}")
@@ -182,7 +182,7 @@ if [ -e "${default_path}hwinfo" ]; then
             if [ ! -z "${summary_local_gfxcard_vendor}" ]; then
                 summary_gfxcard_vendor[${summary_gfxcard_nb}]=$(sanitize_terminal_output "$summary_local_gfxcard_vendor")
             fi
-            ((summary_gfxcard_nb++))
+            summary_gfxcard_nb=$((summary_gfxcard_nb+1))
         fi
     done <<< "${summary_gfxcards}"
     if [ "${summary_gfxcard_nb}" -eq 1 ]; then
@@ -228,7 +228,7 @@ if [ -e "${default_path}hwinfo" ]; then
             if [ ! -z "${summary_local_sound_vendor}" ]; then
                 summary_sound_vendor[${summary_sound_nb}]=$(sanitize_terminal_output "$summary_local_sound_vendor")
             fi
-            ((summary_sound_nb++))
+            summary_sound_nb=$((summary_sound_nb+1))
         fi
     done <<< "${summary_sounds}"
     if [ "${summary_sound_nb}" -eq 1 ]; then

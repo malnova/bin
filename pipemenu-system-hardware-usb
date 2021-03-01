@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((usb_nb++))
+            z=$((z+1))
+            usb_nb=$((usb_nb+1))
         fi
         unset usb_model
         usb_model=$(str_str "$line" "Model:")

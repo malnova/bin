@@ -4,10 +4,8 @@
 
 echo "<openbox_pipe_menu>"
 
-unset is_partition
-partition_str=''
+unset partition_str
 while IFS= read -r line; do
-    is_partition=1
     partition_mountpoint=$(echo "$line" | awk '{print $1}')
     partition_mountpoint=$(sanitize_output "$partition_mountpoint")
     partition_space_used=$(echo "$line" | awk '{print $2}')
@@ -16,7 +14,7 @@ while IFS= read -r line; do
     partition_str+="<item label=\"$partition_mountpoint : $partition_space_used utilisés sur $partition_space_total ($partition_space_percent)\" />"
 done < <(${default_path}df -h --output=target,used,size,pcent -x tmpfs -x devtmpfs | grep '/')
 
-if [ -z "$is_partition" ]; then
+if [ -z "$partition_str" ]; then
     echo "<item label=\"Aucune partition détectée.\" />"
 else
     echo "$partition_str"

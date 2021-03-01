@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((ide_nb++))
+            z=$((z+1))
+            ide_nb=$((ide_nb+1))
         fi
         unset ide_model
         ide_model=$(str_str "$line" "Model:")

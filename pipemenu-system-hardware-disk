@@ -18,7 +18,7 @@ if [ -e "${default_path}hwinfo" ]; then
             disk_device_file_suffix=$(echo $disk_device_file | grep -oP "^/dev/\K.*" | cut -d ' ' -f1)
             if [[ "$block_devices" == *"$disk_device_file_suffix "* ]]; then
                 is_disk=1
-                ((z++))
+                z=$((z+1))
                 declare -a disk_connector
                 disk_connector[$disk_nb]=$(echo "$line" | grep -ioP '^\s*\K.*' | awk '{print $1}')
                 if [ ! -z "${disk_connector[$disk_nb]}" ]; then
@@ -29,7 +29,7 @@ if [ -e "${default_path}hwinfo" ]; then
                         z=0
                         echo "<separator />"
                     fi
-                    ((disk_nb++))
+                    disk_nb=$((disk_nb+1))
                 fi
                 unset disk_model
                 disk_model=$(str_str "$line" "Model:")

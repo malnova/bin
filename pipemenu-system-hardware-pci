@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((pci_nb++))
+            z=$((z+1))
+            pci_nb=$((pci_nb+1))
         fi
         unset pci_model
         pci_model=$(str_str "$line" "Model:")

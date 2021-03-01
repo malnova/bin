@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((scsi_nb++))
+            z=$((z+1))
+            scsi_nb=$((scsi_nb+1))
         fi
         unset scsi_model
         scsi_model=$(str_str "$line" "Model:")

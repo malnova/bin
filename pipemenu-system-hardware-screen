@@ -20,7 +20,7 @@ if [ -e "${default_path}hwinfo" ]; then
         screen_week=$(str_str "$line" "Week of Manufacture:" | grep -Eo '[0-9]+' | head -n1)
         if [ ! -z "$screen_model" ] || [ ! -z "$screen_vendor" ] || [ ! -z "$screen_serial" ] || ([ ! -z "$screen_year" ] && [ "$screen_year" -gt 0 ]) || ([ ! -z "$screen_week" ] && [ "$screen_week" -gt 0 ]); then
             is_screen=1
-            ((screen_nb++))
+            screen_nb=$((screen_nb+1))
             echo "<separator label=\"Écran $screen_nb\" />"
         fi
         if [ ! -z "$screen_model" ]; then
@@ -72,7 +72,7 @@ while read -r screen_is_disconnected; do
     unset screen_device
     screen_device=$(echo "$screen_is_disconnected" | awk -F'disconnected' '{print $1}')
     if [ ! -z "$screen_device" ]; then
-        ((screens_disconnected_nb++))
+        screens_disconnected_nb=$((screens_disconnected_nb+1))
         screen_device=$(sanitize_output "$screen_device")
         if [ ! -z "$screens_disconnected_list" ]; then
             screens_disconnected_list="$screens_disconnected_list, $screen_device"

@@ -81,7 +81,7 @@ for device_name in ${good_devices[@]}; do
     device_fstype=$(lsblk -drno FSTYPE "$device_name")
     if [ "$device_fstype" != "crypto_LUKS" ] || ([ "$device_fstype" = "crypto_LUKS" ] && [ ! "$is_lockable" ]); then
         is_device=1
-        ((z++))
+        z=$((z+1))
         device_label=$(lsblk -dno LABEL "$device_name")
         device_mountpath=$(findmnt -no TARGET "$device_name")
         device_size=$(lsblk -drno SIZE "$device_name")

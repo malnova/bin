@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((cdrom_nb++))
+            z=$((z+1))
+            cdrom_nb=$((cdrom_nb+1))
         fi
         unset cdrom_model
         cdrom_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_model=$(sanitize_output "$cdrom_model")
             echo "<item label=\"Modèle : $cdrom_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_vendor
         cdrom_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_vendor=$(sanitize_output_with_quotes "$cdrom_vendor")
             echo "<item label=\"Fabricant : $cdrom_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_device_file
         cdrom_device_file=$(str_str "$line" "Device File:")
@@ -47,7 +47,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_device_file=$(sanitize_output "$cdrom_device_file")
             echo "<item label=\"Fichier : $cdrom_device_file\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_speed
         cdrom_speed=$(str_str "$line" "Drive Speed:")
@@ -58,7 +58,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 cdrom_speed=$(echo "${cdrom_speed}X")
             fi
             echo "<item label=\"Vitesse : $cdrom_speed\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_features
         cdrom_features=$(str_str "$line" "Features:")
@@ -66,7 +66,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_features=$(sanitize_output "$cdrom_features")
             echo "<item label=\"Compatibilité : $cdrom_features\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_status
         cdrom_status=$(str_str "$line" "Drive status:")
@@ -74,7 +74,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_status=$(sanitize_output "$cdrom_status")
             echo "<item label=\"Statut : $cdrom_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_volume_id
         cdrom_volume_id=$(str_str "$line" "Volume ID:")
@@ -82,7 +82,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_volume_id=$(sanitize_output "$cdrom_volume_id")
             echo "<item label=\"Disque : $cdrom_volume_id\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_application
         cdrom_application=$(str_str "$line" "Application:")
@@ -90,7 +90,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_cdrom=1
             cdrom_application=$(sanitize_output "$cdrom_application")
             echo "<item label=\"Application : $cdrom_application\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_date
         cdrom_date=$(str_str "$line" "Creation date:")
@@ -100,7 +100,7 @@ if [ -e "${default_path}hwinfo" ]; then
             cdrom_date_month=$(echo "$cdrom_date" | grep -oP '([0-9]{4})\K([0-9]{2})' | head -n1)
             cdrom_date_day=$(echo "$cdrom_date" | grep -oP '([0-9]{6})\K([0-9]{2})' | head -n1)
             echo "<item label=\"Date : $cdrom_date_day/$cdrom_date_month/$cdrom_date_year\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset cdrom_driver
         cdrom_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -147,30 +147,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$cdrom_driver" ] && [ ! -z "$cdrom_driver_status" ]; then
             is_cdrom=1
             echo "<item label=\"Driver(s) : $cdrom_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$cdrom_driver" ] && [ -z "$cdrom_driver_status" ]; then
             is_cdrom=1
             echo "<item label=\"Driver(s) : $cdrom_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$cdrom_driver" ] && [ ! -z "$cdrom_driver_status" ] && [ "$cdrom_driver" == "$cdrom_driver_status" ]; then
             is_cdrom=1
             echo "<item label=\"Driver(s) : $cdrom_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$cdrom_driver" ] && [ ! -z "$cdrom_driver_status" ] && [ "$cdrom_driver" != "$cdrom_driver_status" ]; then
             is_cdrom=1
             cdrom_driver=$(echo "$cdrom_driver ($cdrom_driver_status)")
             echo "<item label=\"Driver(s) : $cdrom_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$cdrom_driver_modules" ]; then
             is_cdrom=1
             echo "<item label=\"Module(s) : $cdrom_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$cdrom_status" ]; then
             is_cdrom=1
             echo "<item label=\"État : $cdrom_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$cdroms"
     if [ ! -z "$is_cdrom" ]; then

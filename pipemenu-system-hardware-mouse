@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((mouse_nb++))
+            z=$((z+1))
+            mouse_nb=((mouse_nb+1))
         fi
         unset mouse_model
         mouse_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_mouse=1
             mouse_model=$(sanitize_output "$mouse_model")
             echo "<item label=\"Modèle : $mouse_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset mouse_vendor
         mouse_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_mouse=1
             mouse_vendor=$(sanitize_output_with_quotes "$mouse_vendor")
             echo "<item label=\"Fabricant : $mouse_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset mouse_device_file
         mouse_device_file=$(str_str "$line" "Device Files:" | grep -ioP '/dev/input/event[0-9]+' | head -n1)
@@ -53,7 +53,7 @@ if [ -e "${default_path}hwinfo" ]; then
             fi
             mouse_device_file=$(sanitize_output "$mouse_device_file")
             echo "<item label=\"Fichier : $mouse_device_file\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset mouse_driver
         mouse_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -100,30 +100,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ]; then
             is_mouse=1
             echo "<item label=\"Driver(s) : $mouse_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$mouse_driver" ] && [ -z "$mouse_driver_status" ]; then
             is_mouse=1
             echo "<item label=\"Driver(s) : $mouse_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ] && [ "$mouse_driver" == "$mouse_driver_status" ]; then
             is_mouse=1
             echo "<item label=\"Driver(s) : $mouse_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$mouse_driver" ] && [ ! -z "$mouse_driver_status" ] && [ "$mouse_driver" != "$mouse_driver_status" ]; then
             is_mouse=1
             mouse_driver=$(echo "$mouse_driver ($mouse_driver_status)")
             echo "<item label=\"Driver(s) : $mouse_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$mouse_driver_modules" ]; then
             is_mouse=1
             echo "<item label=\"Module(s) : $mouse_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$mouse_status" ]; then
             is_mouse=1
             echo "<item label=\"État : $mouse_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$mouses"
     if [ ! -z "$is_mouse" ]; then

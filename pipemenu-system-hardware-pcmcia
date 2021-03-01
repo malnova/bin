@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((pcmcia_nb++))
+            z=$((z+1))
+            pcmcia_nb=$((pcmcia_nb+1))
         fi
         unset pcmcia_model
         pcmcia_model=$(str_str "$line" "Model:")

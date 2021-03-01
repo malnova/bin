@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 . pipemenu-default-commands
 . pipemenu-system-functions
 
@@ -6,10 +6,9 @@ echo "<openbox_pipe_menu>"
 
 unset is_mem
 if [ -e "/proc/meminfo" ]; then
-    IFS=$' '
     unset mem
-    pattern=('^MemTotal:' '^MemFree:' '^Buffers:' '^Cached:' '^SwapTotal:' '^SwapFree:' '^SwapCached:')
-    mem=$(for pat in "${pattern[@]}"; do echo $(cat /proc/meminfo | grep -i -m1 $pat); done)
+    pattern="^MemTotal:\n^MemFree:\n^Buffers:\n^Cached:\n^SwapTotal:\n^SwapFree:\n^SwapCached:"
+    mem=$(echo "$pattern" | while IFS= read -r line; do echo $(cat /proc/meminfo | grep -i -m1 $line); done)
     if [ ! -z "$mem" ]; then
         # RAM
         echo "<separator label=\"RAM\" />"
@@ -59,7 +58,6 @@ if [ -e "/proc/meminfo" ]; then
             echo "<item label=\"Utilisée : $swap_used Mo ($swap_percent %)\" />"
         fi
     fi
-    unset IFS
 elif [ -e "${default_path}free" ]; then
     IFS=$' '
     unset ram

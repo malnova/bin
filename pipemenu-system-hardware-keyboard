@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((keyboard_nb++))
+            z=$((z+1))
+            keyboard_nb=$((keyboard_nb+1))
         fi
         unset keyboard_model
         keyboard_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_keyboard=1
             keyboard_model=$(sanitize_output "$keyboard_model")
             echo "<item label=\"Modèle : $keyboard_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset keyboard_vendor
         keyboard_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_keyboard=1
             keyboard_vendor=$(sanitize_output_with_quotes "$keyboard_vendor")
             echo "<item label=\"Fabricant : $keyboard_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset keyboard_device_file
         keyboard_device_file=$(str_str "$line" "Device Files:" | grep -ioP '/dev/input/event[0-9]+' | head -n1)
@@ -53,7 +53,7 @@ if [ -e "${default_path}hwinfo" ]; then
             fi
             keyboard_device_file=$(sanitize_output "$keyboard_device_file")
             echo "<item label=\"Fichier : $keyboard_device_file\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset keyboard_xkbmodel
         keyboard_xkbmodel=$(str_str "$line" "XkbModel:")
@@ -61,7 +61,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_keyboard=1
             keyboard_xkbmodel=$(sanitize_output "$keyboard_xkbmodel")
             echo "<item label=\"XkbModel : $keyboard_xkbmodel\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset keyboard_driver
         keyboard_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -108,30 +108,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ]; then
             is_keyboard=1
             echo "<item label=\"Driver(s) : $keyboard_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$keyboard_driver" ] && [ -z "$keyboard_driver_status" ]; then
             is_keyboard=1
             echo "<item label=\"Driver(s) : $keyboard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ] && [ "$keyboard_driver" == "$keyboard_driver_status" ]; then
             is_keyboard=1
             echo "<item label=\"Driver(s) : $keyboard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$keyboard_driver" ] && [ ! -z "$keyboard_driver_status" ] && [ "$keyboard_driver" != "$keyboard_driver_status" ]; then
             is_keyboard=1
             keyboard_driver=$(echo "$keyboard_driver ($keyboard_driver_status)")
             echo "<item label=\"Driver(s) : $keyboard_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$keyboard_driver_modules" ]; then
             is_keyboard=1
             echo "<item label=\"Module(s) : $keyboard_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$keyboard_status" ]; then
             is_keyboard=1
             echo "<item label=\"État : $keyboard_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$keyboards"
     if [ ! -z "$is_keyboard" ]; then

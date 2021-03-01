@@ -12,7 +12,7 @@ if [ -e "/proc/cpuinfo" ]; then
         cpu_nb=$(echo "$line" | grep -ioP '^processor\s*:\K.*')
         if [ ! -z "$cpu_nb" ]; then
             is_cpu=1
-            ((cpu_nb_total++))
+            cpu_nb_total=$((cpu_nb_total+1))
             cpu_nb=$(sanitize_output "$cpu_nb")
             echo "<separator label=\"Processeur $cpu_nb\" />"
             unset cpu_model

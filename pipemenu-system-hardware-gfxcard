@@ -22,8 +22,8 @@ if [ -e "${default_path}hwinfo" ]; then
                 z=0
                 echo "<separator />"
             fi
-            ((z++))
-            ((gfxcard_nb++))
+            z=$((z+1))
+            gfxcard_nb=$((gfxcard_nb+1))
         fi
         unset gfxcard_model
         gfxcard_model=$(str_str "$line" "Model:")
@@ -31,7 +31,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_gfxcard=1
             gfxcard_model=$(sanitize_output "$gfxcard_model")
             echo "<item label=\"Modèle : $gfxcard_model\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset gfxcard_vendor
         gfxcard_vendor=$(str_str "$line" "Vendor:")
@@ -39,7 +39,7 @@ if [ -e "${default_path}hwinfo" ]; then
             is_gfxcard=1
             gfxcard_vendor=$(sanitize_output_with_quotes "$gfxcard_vendor")
             echo "<item label=\"Fabricant : $gfxcard_vendor\" />"
-            ((z++))
+            z=$((z+1))
         fi
         unset gfxcard_driver
         gfxcard_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
@@ -86,30 +86,30 @@ if [ -e "${default_path}hwinfo" ]; then
         if [ -z "$gfxcard_driver" ] && [ ! -z "$gfxcard_driver_status" ]; then
             is_gfxcard=1
             echo "<item label=\"Driver(s) : $gfxcard_driver_status\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$gfxcard_driver" ] && [ -z "$gfxcard_driver_status" ]; then
             is_gfxcard=1
             echo "<item label=\"Driver(s) : $gfxcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$gfxcard_driver" ] && [ ! -z "$gfxcard_driver_status" ] && [ "$gfxcard_driver" == "$gfxcard_driver_status" ]; then
             is_gfxcard=1
             echo "<item label=\"Driver(s) : $gfxcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         elif [ ! -z "$gfxcard_driver" ] && [ ! -z "$gfxcard_driver_status" ] && [ "$gfxcard_driver" != "$gfxcard_driver_status" ]; then
             is_gfxcard=1
             gfxcard_driver=$(echo "$gfxcard_driver ($gfxcard_driver_status)")
             echo "<item label=\"Driver(s) : $gfxcard_driver\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$gfxcard_driver_modules" ]; then
             is_gfxcard=1
             echo "<item label=\"Module(s) : $gfxcard_driver_modules\" />"
-            ((z++))
+            z=$((z+1))
         fi
         if [ ! -z "$gfxcard_status" ]; then
             is_gfxcard=1
             echo "<item label=\"État : $gfxcard_status\" />"
-            ((z++))
+            z=$((z+1))
         fi
     done <<< "$gfxcards"
     if [ ! -z "$is_gfxcard" ]; then

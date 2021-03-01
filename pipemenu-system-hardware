@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/dash
 . pipemenu-default-commands
 
 echo "<openbox_pipe_menu>"
