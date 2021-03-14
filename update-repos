@@ -13,7 +13,7 @@ else
         echo " ${bold}Fait.$reset"
         echo -n "Mise à jour des miroirs dans ${mirror_file}..."
         echo "# Liste de miroirs générée le $(date +'%a %d %B %Y')" > "$mirror_file"
-        if curl -s "https://www.archlinux.org/mirrorlist/?country=FR&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | rankmirrors -n 10 - >> "$mirror_file"; then
+        if curl -s "https://archlinux.org/mirrorlist/?country=FR&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | rankmirrors -n 10 - >> "$mirror_file"; then
             echo " ${bold}Fait.$reset"
         else
             echo -e "\n${bold}Erreur :$reset les miroirs n'ont pas pu être mis à jour."
