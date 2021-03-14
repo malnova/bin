@@ -9,6 +9,8 @@ italic=$(tput sitm)
 reset=$(tput sgr0)
 yellow='\033[1;33m'
 nocolor='\033[0m'
+indent_width='3'
+printf -v tab '%*s' $indent_width
 
 last_update_date=$(grep '.*upgraded.*(.*)$\|starting full system upgrade' $pacman_log | tail -n1 | grep -o -E "[-0-9\]*T[:0-9]*\+[0-9]+")
 last_update_ts=$(TZ=UTC date -d "$last_update_date" '+%s')
@@ -37,13 +39,19 @@ if [ $? -eq 0 ]; then
             description=$(echo "$description" | sed "s/<strong>/$bold/g;s/<\/strong>/$reset/g")
             # Remplacer les balises <em> par une mise en italique
             description=$(echo "$description" | sed "s/<em>/$italic/g;s/<\/em>/$reset/g")
-            # Remplacer les balises <br>, </p> et </pre> par un saut de ligne
-            description=$(echo "$description" | sed "s/<br>/\\n/g;s/<br \/>/\\n/g;s/<\/p> /\\n/g;s/<\/pre> /\\n/g")
-            # Supprimer toutes les autres balises HTML
-            description=$(echo "$description" | sed -e 's/<[^>]*>//g')
-            echo -e "$description"
+            # Remplacer les balises <li>
+            description=$(echo "$description" | sed "s/<li>/$tab• /g")
+            # Remplacer les balises <br>, </p>, </pre> et </li> par un saut de ligne
+            description=$(echo "$description" | sed "s/<br>/\\n/g;s/<br \/>/\\n/g;s/<\/p> /\\n/g;s/<\/pre> /\\n/g;s/<\/li> /\\n/g")
+            # Supprimer toutes les autres balises HTML et l'espace surnuméraire éventuel qui suit
+            description=$(echo "$description" | sed -e 's/<[^>]*>\s\?//g')
+            # Convertir les caractères HTML restants
+            description=$(echo "$description" | perl -MHTML::Entities -pe 'decode_entities($_);')
+            # Afficher le texte avec indentation
+            columns="$(($(tput cols)-$indent_width))"
+            echo -e "$description" | fmt -sw "$columns" | awk '{printf "'$tab'"$0"\n"}'
         else
-            echo "$pubDate_readable $title ($creator)"
+            echo "${bold}$pubDate_readable${reset} $title ($creator)"
         fi
     done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n $news_nb)
 else
