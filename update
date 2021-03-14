@@ -1,6 +1,9 @@
 #!/bin/bash
 # Inspiré par pacnanny : https://github.com/brandoninvergo/pacnanny
+[ -z "$1" ] && news_nb=3 || news_nb="$1"
 date_format='%Y-%m-%d %H:%M:%S'
+mirror_file="/etc/pacman.d/mirrorlist"
+mirrors_status_page="https://archlinux.org/mirrors/status/"
 update_command="/usr/bin/trizen -Syu"
 news_url="https://archlinux.org/feeds/news/"
 pacman_log='/var/log/pacman.log'
@@ -16,49 +19,68 @@ last_update_date=$(grep '.*upgraded.*(.*)$\|starting full system upgrade' $pacma
 last_update_ts=$(TZ=UTC date -d "$last_update_date" '+%s')
 
 # Afficher les dernières actualités depuis archlinux.org
-[ -z "$1" ] && news_nb=3 || news_nb="$1"
-news=$(curl --silent $news_url)
-if [ $? -eq 0 ]; then
-    IFS=$'\n'
-    # Reformater le flux RSS pour que chaque item soit sur une ligne
-    items=$(echo $news | tr -d '\n' | sed -e 's|<item>|\n<item>|g')
-    while IFS= read -r item; do
-        pubDate_date=$(echo "$item" | sed -e 's/.*<pubDate>\(.*\)<\/pubDate>.*/\1/')
-        pubDate_ts=$(TZ=UTC date -d "$pubDate_date" '+%s')
-        pubDate_readable=$(TZ=CET date -d "@$pubDate_ts" "+$date_format")
-        title=$(echo "$item" | sed -e 's/.*<title>\(.*\)<\/title>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
-        creator=$(echo "$item" | sed -e 's/.*<dc:creator.*>\(.*\)<\/dc:creator>.*/\1/')
-        if [ "$pubDate_ts" -ge "$last_update_ts" ]; then
-            echo -e "${bold}${yellow}${pubDate_readable} ${title} (${creator})${nocolor}${reset}"
-            description=$(echo "$item" | sed -e 's/.*<description>\(.*\)<\/description>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
-            # Remplacer les balises de liens <a href=""> par la couleur bleue
-            description=$(echo "$description" | sed 's/<a href="[^>]*>/\\033[1;34m/g;s/<\/a>/\\033[0m/g')
-            # Remplacer les balises <code> par la couleur verte
-            description=$(echo "$description" | sed 's/<code>/\\033[1;32m/g;s/<\/code>/\\033[0m/g')
-            # Remplacer les balises <strong> par une mise en gras
-            description=$(echo "$description" | sed "s/<strong>/$bold/g;s/<\/strong>/$reset/g")
-            # Remplacer les balises <em> par une mise en italique
-            description=$(echo "$description" | sed "s/<em>/$italic/g;s/<\/em>/$reset/g")
-            # Remplacer les balises <li>
-            description=$(echo "$description" | sed "s/<li>/$tab• /g")
-            # Remplacer les balises <br>, </p>, </pre> et </li> par un saut de ligne
-            description=$(echo "$description" | sed "s/<br>/\\n/g;s/<br \/>/\\n/g;s/<\/p> /\\n/g;s/<\/pre> /\\n/g;s/<\/li> /\\n/g")
-            # Supprimer toutes les autres balises HTML et l'espace surnuméraire éventuel qui suit
-            description=$(echo "$description" | sed -e 's/<[^>]*>\s\?//g')
-            # Convertir les caractères HTML restants
-            description=$(echo "$description" | perl -MHTML::Entities -pe 'decode_entities($_);')
-            # Afficher le texte avec indentation
-            columns="$(($(tput cols)-$indent_width))"
-            echo -e "$description" | fmt -sw "$columns" | awk '{printf "'$tab'"$0"\n"}'
-        else
-            echo "${bold}$pubDate_readable${reset} $title ($creator)"
-        fi
-    done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n $news_nb)
-else
-    echo "Erreur : impossible de charger la page $news_url."
-fi
+display_news() {
+    news=$(curl --silent $news_url)
+    if [ $? -eq 0 ]; then
+        IFS=$'\n'
+        # Reformater le flux RSS pour que chaque item soit sur une ligne
+        items=$(echo $news | tr -d '\n' | sed -e 's|<item>|\n<item>|g')
+        while IFS= read -r item; do
+            pubDate_date=$(echo "$item" | sed -e 's/.*<pubDate>\(.*\)<\/pubDate>.*/\1/')
+            pubDate_ts=$(TZ=UTC date -d "$pubDate_date" '+%s')
+            pubDate_readable=$(TZ=CET date -d "@$pubDate_ts" "+$date_format")
+            title=$(echo "$item" | sed -e 's/.*<title>\(.*\)<\/title>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
+            creator=$(echo "$item" | sed -e 's/.*<dc:creator.*>\(.*\)<\/dc:creator>.*/\1/')
+            if [ "$pubDate_ts" -ge "$last_update_ts" ]; then
+                echo -e "\033[1;34m::\033[0m ${bold}${yellow}${pubDate_readable} ${title} (${creator})${nocolor}${reset}"
+                description=$(echo "$item" | sed -e 's/.*<description>\(.*\)<\/description>.*/\1/' | perl -MHTML::Entities -pe 'decode_entities($_);')
+                # Remplacer les balises de liens <a href=""> par la couleur bleue
+                description=$(echo "$description" | sed 's/<a href="[^>]*>/\\033[1;34m/g;s/<\/a>/\\033[0m/g')
+                # Remplacer les balises <code> par la couleur verte
+                description=$(echo "$description" | sed 's/<code>/\\033[1;32m/g;s/<\/code>/\\033[0m/g')
+                # Remplacer les balises <strong> par une mise en gras
+                description=$(echo "$description" | sed "s/<strong>/$bold/g;s/<\/strong>/$reset/g")
+                # Remplacer les balises <em> par une mise en italique
+                description=$(echo "$description" | sed "s/<em>/$italic/g;s/<\/em>/$reset/g")
+                # Remplacer les balises <li>
+                description=$(echo "$description" | sed "s/<li>/$tab• /g")
+                # Remplacer les balises <br>, </p>, </pre> et </li> par un saut de ligne
+                description=$(echo "$description" | sed "s/<br>/\\n/g;s/<br \/>/\\n/g;s/<\/p> /\\n/g;s/<\/pre> /\\n/g;s/<\/li> /\\n/g")
+                # Supprimer toutes les autres balises HTML et l'espace surnuméraire éventuel qui suit
+                description=$(echo "$description" | sed -e 's/<[^>]*>\s\?//g')
+                # Convertir les caractères HTML restants
+                description=$(echo "$description" | perl -MHTML::Entities -pe 'decode_entities($_);')
+                # Afficher le texte avec indentation
+                columns="$(($(tput cols)-$indent_width))"
+                echo -e "$description" | fmt -sw "$columns" | awk '{printf "'$tab'"$0"\n"}'
+            else
+                echo -e "\033[1;34m::\033[0m $pubDate_readable $title ($creator)"
+            fi
+        done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n "$news_nb")
+    else
+        echo "Erreur : impossible de charger la page $news_url."
+    fi
+}
 
-function finish {
+# Vérifier si les miroirs sont à jour
+check_mirror_status() {
+    # Supprimer les lignes blanches et les lignes commentées de la liste des miroirs, et ne conserver que l'URL du premier serveur
+    mirror=$(grep '^[^;#]' "$mirror_file" | head -n1 | sed 's/Server = //g')
+    # Récupérer les adresses des miroirs non à jour
+    mirrors_status=$(curl -s "$mirrors_status_page" | sed -n '/<table id="outofsync_mirrors"/,/<\/table>/p' | grep -o 'http[s]*://[^"]*\|rsync://[^"]*')
+    if [[ "$mirrors_status" == *"$mirror"* ]]; then
+        echo -e "\033[1;34m::\033[0m ${bold}${yellow}Le miroir $mirror n'est pas à jour !${nocolor}${reset}"
+        read -p "${bold}Voulez-vous interrompre la mise à jour ?${reset} [O/n] : " answer
+        case $answer in
+            [Nn]) ;;
+            *) exit;;
+        esac
+    else
+        echo -e "\033[1;34m::\033[0m Le miroir $mirror est à jour."
+    fi
+}
+
+finish() {
     # Affichage des fichiers .pacnew et .pacsave
     pacnews=$(echo "$pacman_log" | grep -o "[-0-9_/a-z\.]*.pacnew")
     if [ "x$pacnews" != "x" ]; then
@@ -78,6 +100,8 @@ function finish {
 trap finish EXIT
 
 # Lancer la mise à jour d'Arch
+display_news
+check_mirror_status
 run_date=`date '+%Y-%m-%dT%H:%M'`
 eval $update_command
 
