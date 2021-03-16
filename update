@@ -20,8 +20,8 @@ last_update_ts=$(TZ=UTC date -d "$last_update_date" '+%s')
 
 # Afficher les dernières actualités depuis archlinux.org
 display_news() {
-    echo -e "\033[1;34m::\033[0m ${bold}Récupération des nouveautés d'Arch Linux…${reset}"
-    news=$(curl --silent $news_url)
+    echo -e "\033[1;34m::\033[0m ${bold}Récupération des nouvelles d'Arch Linux…${reset}"
+    news=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 15 --retry 1 --retry-delay 0 "$news_url")
     if [ $? -eq 0 ]; then
         IFS=$'\n'
         # Reformater le flux RSS pour que chaque item soit sur une ligne
@@ -59,35 +59,40 @@ display_news() {
             fi
         done < <(echo "$items" | grep -oP '(?<=<item>).*(?=</item)' | head -n "$news_nb")
     else
-        echo -e "${bold}${yellow}Erreur : impossible de charger la page $news_url.${nocolor}${reset}"
+        echo -e "${bold}${yellow}Erreur : problème lors du chargement de la page ${news_url}.${nocolor}${reset}"
     fi
 }
 
 # Vérifier si les miroirs sont à jour
 check_mirror_status() {
-    echo -e "\033[1;34m::\033[0m ${bold}Récupération des infos sur les miroirs…${reset}"
-    # Supprimer les lignes blanches et les lignes commentées de la liste des miroirs
-    mirrors=$(grep '^[^;#]' "$mirror_file" | sed 's/Server = //g')
+    echo -e "\033[1;34m::\033[0m ${bold}Récupération des informations sur les miroirs…${reset}"
     # Récupérer les adresses des miroirs non à jour
-    mirrors_status=$(curl --silent "$mirrors_status_page" | sed -n '/<table id="outofsync_mirrors"/,/<\/table>/p' | grep -o 'http[s]*://[^"]*\|rsync://[^"]*')
-    z=0
-    while IFS= read -r line; do
-        z=$((z+1))
-        if [[ "$mirrors_status" == *"$line"* ]]; then
-            if [ "$z" == "1" ]; then
-                echo -e " ${bold}${yellow}Le miroir principal ($line) n'est pas à jour !${nocolor}${reset}"
-                read -p " ${bold}Voulez-vous interrompre la mise à jour ?${reset} [O/n] : " answer
-                case $answer in
-                    [Nn]) ;;
-                    *) exit;;
-                esac
+    mirrors_status=$(curl --fail --silent --show-error --connect-timeout 10 --max-time 15 --retry 1 --retry-delay 0 "$mirrors_status_page")
+    if [ $? -eq 0 ]; then
+        mirrors_status=$(echo "$mirrors_status" | sed -n '/<table id="outofsync_mirrors"/,/<\/table>/p' | grep -o 'http[s]*://[^"]*\|rsync://[^"]*')
+        # Supprimer les lignes blanches et les lignes commentées de la liste des miroirs
+        mirrors=$(grep '^[^;#]' "$mirror_file" | sed 's/Server = //g')
+        z=0
+        while IFS= read -r line; do
+            z=$((z+1))
+            if [[ "$mirrors_status" == *"$line"* ]]; then
+                if [ "$z" == "1" ]; then
+                    echo -e " ${bold}${yellow}Le miroir principal ($line) n'est pas à jour !${nocolor}${reset}"
+                    read -p " ${bold}Voulez-vous interrompre la mise à jour ?${reset} [O/n] : " answer
+                    case $answer in
+                        [Nn]) ;;
+                        *) exit;;
+                    esac
+                else
+                    echo -e " ${bold}${yellow}Le miroir $line n'est pas à jour !${nocolor}${reset}"
+                fi
             else
-                echo -e " ${bold}${yellow}Le miroir $line n'est pas à jour !${nocolor}${reset}"
+                echo " Le miroir $line est à jour."
             fi
-        else
-            echo " Le miroir $line est à jour."
-        fi
-    done <<< "$mirrors"
+        done <<< "$mirrors"
+    else
+        echo -e "${bold}${yellow}Erreur : problème lors du chargement de la page ${mirrors_status_page}.${nocolor}${reset}"
+    fi
 }
 
 finish() {
