@@ -86,16 +86,16 @@ if [ -e "${default_path}hwinfo" ]; then
                     disk_capacity_unit=$(echo "$disk_capacity" | grep -Eo '[A-Z]')
                     disk_capacity=$(echo "$disk_capacity" | grep -Eo '[0-9,]+')
                     if [ "$disk_capacity_unit" = "K" ]; then
-                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000 ))
+                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500) / 1000 ))
                         disk_capacity_bytes="$disk_capacity_bytes KB"
                     elif [ "$disk_capacity_unit" = "M" ]; then
-                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000 ))
+                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000) / 1000000 ))
                         disk_capacity_bytes="$disk_capacity_bytes MB"
                     elif [ "$disk_capacity_unit" = "G" ]; then
-                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000000 ))
+                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000000) / 1000000000 ))
                         disk_capacity_bytes="$disk_capacity_bytes GB"
                     elif [ "$disk_capacity_unit" = "T" ]; then
-                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000000000 ))
+                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000000000) / 1000000000000 ))
                         disk_capacity_bytes="$disk_capacity_bytes TB"
                     fi
                     echo "<item label=\"Capacité : $disk_capacity $disk_capacity_unit ($disk_capacity_bytes)\" />"
