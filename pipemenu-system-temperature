@@ -121,6 +121,26 @@ if [ -e "${default_path}sensors" ]; then
     unset IFS
 fi
 
+if [ -e "${default_path}hddtemp" ]; then
+    # Requiert l'installation du paquet hddtemp
+    while read -r line; do
+        unset is_temp_disk
+        is_temp_disk=$(echo "$line" | grep -E '[0-9]+°C')
+        if [ ! -z "$is_temp_disk" ]; then
+            temp_disk_label=$(echo "$line" | awk -F': ' '{for(i=2;i<=NF;i+=2){print $(i)}}')
+            temp_disk_temp=$(echo "$line" | grep -Eo '[0-9]+°')
+            if [ ! -z "$temp_disk_label" ] && [ ! -z "$temp_disk_temp" ]; then
+                temp_disk_label=$(sanitize_output "$temp_disk_label")
+                if [ ! -z "$is_temp" ]; then
+                    echo "<separator label=\"hddtemp\" />"
+                fi
+                is_temp=1
+                echo "<item label=\"$temp_disk_label : $temp_disk_temp\" />"
+            fi
+        fi
+    done < <(for i in /dev/sd[a-z]; do sudo ${default_path}hddtemp -qu C "$i" 2>/dev/null; done)
+fi
+
 if [ -z "$is_temp" ]; then
     echo "<item label=\"Aucune température détectée.\" />"
 fi
