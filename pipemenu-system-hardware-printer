@@ -23,7 +23,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 echo "<separator />"
             fi
             z=$((z+1))
-            printer_nb=((printer_nb+1))
+            printer_nb=$((printer_nb+1))
         fi
         unset printer_model
         printer_model=$(str_str "$line" "Model:")
