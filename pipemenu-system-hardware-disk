@@ -80,20 +80,25 @@ if [ -e "${default_path}hwinfo" ]; then
                     echo "<item label=\"Type : $disk_type\" />"
                 fi
                 unset disk_capacity
-                disk_capacity=$(dmesg | grep blocks | grep "${disk_device_file_suffix}" | grep -E " \([0-9.,]+ [KMGTPEi]+B/[0-9.,]+ " | head -n1 | rev | cut -d ')' -f2 | cut -d '(' -f1 | rev)
-                if [ ! -z "$disk_capacity" ]; then
-                    unset disk_capacity_total disk_capacity_real
-                    disk_capacity_total=$(echo $disk_capacity | cut -d '/' -f1)
-                    disk_capacity_real=$(echo $disk_capacity | cut -d '/' -f2)
-                    disk_capacity_total=$(sanitize_output "$disk_capacity_total")
-                    disk_capacity_real=$(sanitize_output "$disk_capacity_real")
-                    echo "<item label=\"Capacité : $disk_capacity_real [$disk_capacity_total]\" />"
-                else
-                    disk_capacity=$(lsblk -dno SIZE $disk_device_file 2>/dev/null)
-                    if [ ! -z "$disk_capacity" ]; then
-                        disk_capacity=$(sanitize_output "$disk_capacity")
-                        echo "<item label=\"Capacité : $disk_capacity\" />"
+                disk_capacity=$(lsblk -dno SIZE $disk_device_file 2>/dev/null)
+                disk_capacity_bytes=$(lsblk -dnbo SIZE $disk_device_file 2>/dev/null)
+                if [ ! -z "$disk_capacity" ] && [ ! -z "$disk_capacity_bytes" ]; then
+                    disk_capacity_unit=$(echo "$disk_capacity" | grep -Eo '[A-Z]')
+                    disk_capacity=$(echo "$disk_capacity" | grep -Eo '[0-9,]+')
+                    if [ "$disk_capacity_unit" = "K" ]; then
+                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000 ))
+                        disk_capacity_bytes="$disk_capacity_bytes KB"
+                    elif [ "$disk_capacity_unit" = "M" ]; then
+                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000 ))
+                        disk_capacity_bytes="$disk_capacity_bytes MB"
+                    elif [ "$disk_capacity_unit" = "G" ]; then
+                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000000 ))
+                        disk_capacity_bytes="$disk_capacity_bytes GB"
+                    elif [ "$disk_capacity_unit" = "T" ]; then
+                        disk_capacity_bytes=$(( disk_capacity_bytes / 1000000000000 ))
+                        disk_capacity_bytes="$disk_capacity_bytes TB"
                     fi
+                    echo "<item label=\"Capacité : $disk_capacity $disk_capacity_unit ($disk_capacity_bytes)\" />"
                 fi
                 unset disk_driver
                 disk_driver=$(str_str "$line" "Driver:" | sed 's/\", \"/\",\"/g')
