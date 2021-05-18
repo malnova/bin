@@ -23,7 +23,7 @@ if [ -e "${default_path}hwinfo" ]; then
                 echo "<separator />"
             fi
             z=$((z+1))
-            mouse_nb=((mouse_nb+1))
+            mouse_nb=$((mouse_nb+1))
         fi
         unset mouse_model
         mouse_model=$(str_str "$line" "Model:")
