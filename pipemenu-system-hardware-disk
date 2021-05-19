@@ -15,6 +15,7 @@ if [ -e "${default_path}hwinfo" ]; then
         unset disk_device_file disk_device_file_suffix
         disk_device_file=$(str_str "$line" "Device File:")
         if [ ! -z "$disk_device_file" ]; then
+            disk_device_file=$(sanitize_output "$disk_device_file")
             disk_device_file_suffix=$(echo $disk_device_file | grep -oP "^/dev/\K.*" | cut -d ' ' -f1)
             if [[ "$block_devices" == *"$disk_device_file_suffix "* ]]; then
                 is_disk=1
@@ -31,11 +32,18 @@ if [ -e "${default_path}hwinfo" ]; then
                     fi
                     disk_nb=$((disk_nb+1))
                 fi
-                unset disk_model
-                disk_model=$(str_str "$line" "Model:")
+                unset skdump_output disk_model
+                skdump_output=$(sudo ${default_path}skdump "$disk_device_file" 2>/dev/null)
+                disk_model=$(echo "$skdump_output" | grep -oP '(?<=^Model:[[:space:]]\[).*?(?=\])')
                 if [ ! -z "$disk_model" ]; then
                     disk_model=$(sanitize_output "$disk_model")
                     echo "<item label=\"Modèle : $disk_model\" />"
+                else
+                    disk_model=$(str_str "$line" "Model:")
+                    if [ ! -z "$disk_model" ]; then
+                        disk_model=$(sanitize_output "$disk_model")
+                        echo "<item label=\"Modèle : $disk_model\" />"
+                    fi
                 fi
                 unset disk_vendor
                 disk_vendor=$(str_str "$line" "Vendor:")
@@ -73,11 +81,29 @@ if [ -e "${default_path}hwinfo" ]; then
                         fi
                     fi
                 fi
-                disk_device_file=$(sanitize_output "$disk_device_file")
                 echo "<item label=\"Fichier : $disk_device_file\" />"
                 if [ ! -z "$disk_type" ]; then
                     disk_type=$(sanitize_output "$disk_type")
                     echo "<item label=\"Type : $disk_type\" />"
+                fi
+                unset disk_bad_sectors
+                disk_bad_sectors=$(echo "$skdump_output" | sed -n 's/^Bad Sectors: //p' | grep -Eo '[0-9]+')
+                if [ ! -z "$disk_bad_sectors" ]; then
+                    disk_bad_sectors=$(sanitize_output "$disk_bad_sectors")
+                    echo "<item label=\"Secteurs défectueux : $disk_bad_sectors\" />"
+                fi
+                unset disk_overall_status
+                disk_overall_status=$(echo "$skdump_output" | sed -n 's/^Overall Status: //p')
+                if [ ! -z "$disk_overall_status" ]; then
+                    if [[ "$disk_overall_status" =~ "BAD" ]]; then
+                        disk_overall_status=$(sanitize_output "$disk_overall_status")
+                        disk_overall_status="MAUVAIS ($disk_overall_status) !"
+                    elif [[ "$disk_overall_status" =~ "GOOD" ]]; then
+                        disk_overall_status="SAIN"
+                    else
+                        disk_overall_status=$(sanitize_output "$disk_overall_status")
+                    fi
+                    echo "<item label=\"État général : $disk_overall_status\" />"
                 fi
                 unset disk_capacity
                 disk_capacity=$(lsblk -dno SIZE $disk_device_file 2>/dev/null)
