@@ -20,101 +20,99 @@ echo "<openbox_pipe_menu>"
 
 unset is_partition partition_disk_path partition_disk_model
 while IFS= read -r line; do
-    partition_disk_path=$(echo "$line" | awk '{print $1}')
-    partition_disk_model=$(echo "$line" | awk '{print $2}')
-    if [ ! -z "$partition_disk_path" ] && [ ! -z "$partition_disk_model" ]; then
-        is_partition=1
-        partition_disk_path=$(sanitize_output "$partition_disk_path")
-        partition_disk_model=$(echo "$partition_disk_model" | sed 's/_/ /g')
-        partition_disk_model=$(sanitize_output "$partition_disk_model")
-        echo -e "<separator label=\"$partition_disk_model\n ($partition_disk_path)\" />"
-        partition_nb=0
-        unset partition partition_disk_used partition_mountpoint
-        while IFS= read -r partition; do
-            partition_mountpoint=$(${default_path}lsblk -npo MOUNTPOINT "$partition" | head -n1)
-            if [ ! -z "$partition_mountpoint" ]; then
-                if [ "$partition_nb" -gt 0 ]; then
-                    echo "<separator />"
-                fi
-                partition_nb=1
-                partition_name=$(sanitize_output "$partition")
-                echo "<item label=\"Partition : $partition_name\" />"
-                unset partition_fstype partition_parttypename
-                partition_fstype=$(${default_path}lsblk -npo FSTYPE "$partition")
-                partition_parttypename=$(${default_path}lsblk -npo PARTTYPENAME "$partition")
-                if [ ! -z "$partition_fstype" ] && [ ! -z "$partition_parttypename" ]; then
-                    partition_fstype=$(sanitize_output "$partition_fstype")
-                    partition_parttypename=$(sanitize_output "$partition_parttypename")
-                    echo "<item label=\"Système de fichiers : $partition_fstype ($partition_parttypename)\" />"
-                elif [ ! -z "$partition_fstype" ]; then
-                    partition_fstype=$(sanitize_output "$partition_fstype")
-                    echo "<item label=\"Système de fichiers : $partition_fstype\" />"
-                fi
-                partition_mountpoint=$(sanitize_output "$partition_mountpoint")
-                echo "<item label=\"Point de montage : $partition_mountpoint\" />"
-                unset partition_label
-                partition_label=$(${default_path}lsblk -npo LABEL "$partition")
-                if [ ! -z "$partition_label" ]; then
-                    partition_label=$(sanitize_output "$partition_label")
-                    echo "<item label=\"Étiquette : $partition_label\" />"
-                fi
-                unset partition_fsused partition_fssize partition_fsuse_percent partition_size
-                partition_fsused=$(${default_path}lsblk -npo FSUSED "$partition")
-                partition_fssize=$(${default_path}lsblk -npo FSSIZE "$partition")
-                partition_fsuse_percent=$(${default_path}lsblk -npo FSUSE% "$partition")
-                if [ ! -z "$partition_fsused" ] && [ ! -z "$partition_fssize" ] && [ ! -z "$partition_fsuse_percent" ]; then
-                    partition_fsused_unit=$(echo "$partition_fsused" | grep -Eo '[A-Z]')
-                    partition_fsused_unit=$(change_unit "$partition_fsused_unit")
-                    partition_fsused_value=$(echo "$partition_fsused" | grep -Eo '[0-9,.]+')
-                    partition_fssize_unit=$(echo "$partition_fssize" | grep -Eo '[A-Z]')
-                    partition_fssize_unit=$(change_unit "$partition_fssize_unit")
-                    partition_fssize_value=$(echo "$partition_fssize" | grep -Eo '[0-9,.]+')
-                    partition_fsuse_percent=$(sanitize_output "$partition_fsuse_percent")
-                    echo "<item label=\"Taille : $partition_fsused_value $partition_fsused_unit utilisés sur $partition_fssize_value $partition_fssize_unit (${partition_fsuse_percent})\" />"
-                else
-                    partition_size=$(${default_path}lsblk -npo SIZE "$partition")
-                    partition_size_value=$(echo "$partition_size" | grep -Eo '[0-9,.]+')
-                    partition_size_unit=$(echo "$partition_size" | grep -Eo '[A-Z]')
-                    partition_size_unit=$(change_unit "$partition_size_unit")
-                    echo "<item label=\"Taille : $partition_size_value $partition_size_unit\" />"
-                fi
-            fi
-        done < <(${default_path}lsblk -npo KNAME "$partition_disk_path")
-        unset partition_disk_fullsize partition partition_size partition_disk_used partition_unallocated_space
-        partition_disk_fullsize=$(echo "$line" | awk '{print $3}')
-        while IFS= read -r partition; do
-            partition_size=$(echo "$partition" | awk '{print $1}' | grep -Eo '[0-9]+')
-            partition_disk_used=$(( partition_disk_used + partition_size ))
-        done < <(${default_path}lsblk -bnpo SIZE,TYPE "$partition_disk_path" | grep ' part')
-        partition_unallocated_space=$(( partition_disk_fullsize - partition_disk_used ))
-        partition_unallocated_percent=$(echo "scale=2; $partition_unallocated_space / $partition_disk_fullsize * 100" | bc)
-        if (( $(echo "$partition_unallocated_percent 0.01" | awk '{print ($1 > $2)}') )); then
-        if [ "$partition_unallocated_space" -gt 0 ]; then
-            divide_by_tib=$(( 1024 * 1024 * 1024 * 1024 ))
-            divide_by_gib=$(( 1024 * 1024 * 1024 ))
-            divide_by_mib=$(( 1024 * 1024 ))
-            divide_by_kib=$(( 1024 ))
-            if [ "$partition_unallocated_space" -gt "$divide_by_tib" ]; then
-                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_tib" | bc)
-                partition_unallocated_space="${partition_unallocated_space/./,} TiB"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_gib" ]; then
-                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_gib" | bc)
-                partition_unallocated_space="${partition_unallocated_space/./,} GiB"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_mib" ]; then
-                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_mib" | bc)
-                partition_unallocated_space="${partition_unallocated_space/./,} MiB"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_kib" ]; then
-                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_kib" | bc)
-                partition_unallocated_space="${partition_unallocated_space/./,} KiB"
-            else
-                partition_unallocated_space="$partition_unallocated_space B"
-            fi
-            echo "<separator />"
-            echo "<item label=\"Espace non alloué : $partition_unallocated_space\" />"
-        fi
-        fi
+    is_partition=1
+    partition_disk_path=$(sanitize_output "$line")
+    partition_disk_name=$(${default_path}lsblk -dno MODEL "$line" | sed 's/_/ /g')
+    if [ -z "$partition_disk_name" ]; then
+        echo "<separator label=\"$partition_disk_path\" />"
+    else
+        partition_disk_name=$(sanitize_output "$partition_disk_name")
+        echo "<separator label=\"$partition_disk_name ($partition_disk_path)\" />"
     fi
-done < <(${default_path}lsblk -I 8 -bdno PATH,MODEL,SIZE)
+    partition_nb=0
+    unset partition partition_disk_used partition_mountpoint
+    while IFS= read -r partition; do
+        partition_mountpoint=$(${default_path}lsblk -npo MOUNTPOINT "$partition" | head -n1)
+        if [ ! -z "$partition_mountpoint" ]; then
+            if [ "$partition_nb" -gt 0 ]; then
+                echo "<separator />"
+            fi
+            partition_nb=1
+            partition_name=$(sanitize_output "$partition")
+            echo "<item label=\"Partition : $partition_name\" />"
+            unset partition_fstype partition_parttypename
+            partition_fstype=$(${default_path}lsblk -npo FSTYPE "$partition")
+            partition_parttypename=$(${default_path}lsblk -npo PARTTYPENAME "$partition")
+            if [ ! -z "$partition_fstype" ] && [ ! -z "$partition_parttypename" ]; then
+                partition_fstype=$(sanitize_output "$partition_fstype")
+                partition_parttypename=$(sanitize_output "$partition_parttypename")
+                echo "<item label=\"Système de fichiers : $partition_fstype ($partition_parttypename)\" />"
+            elif [ ! -z "$partition_fstype" ]; then
+                partition_fstype=$(sanitize_output "$partition_fstype")
+                echo "<item label=\"Système de fichiers : $partition_fstype\" />"
+            fi
+            partition_mountpoint=$(sanitize_output "$partition_mountpoint")
+            echo "<item label=\"Point de montage : $partition_mountpoint\" />"
+            unset partition_label
+            partition_label=$(${default_path}lsblk -npo LABEL "$partition")
+            if [ ! -z "$partition_label" ]; then
+                partition_label=$(sanitize_output "$partition_label")
+                echo "<item label=\"Étiquette : $partition_label\" />"
+            fi
+            unset partition_fsused partition_fssize partition_fsuse_percent partition_size
+            partition_fsused=$(${default_path}lsblk -npo FSUSED "$partition")
+            partition_fssize=$(${default_path}lsblk -npo FSSIZE "$partition")
+            partition_fsuse_percent=$(${default_path}lsblk -npo FSUSE% "$partition")
+            if [ ! -z "$partition_fsused" ] && [ ! -z "$partition_fssize" ] && [ ! -z "$partition_fsuse_percent" ]; then
+                partition_fsused_unit=$(echo "$partition_fsused" | grep -Eo '[A-Z]')
+                partition_fsused_unit=$(change_unit "$partition_fsused_unit")
+                partition_fsused_value=$(echo "$partition_fsused" | grep -Eo '[0-9,.]+')
+                partition_fssize_unit=$(echo "$partition_fssize" | grep -Eo '[A-Z]')
+                partition_fssize_unit=$(change_unit "$partition_fssize_unit")
+                partition_fssize_value=$(echo "$partition_fssize" | grep -Eo '[0-9,.]+')
+                partition_fsuse_percent=$(sanitize_output "$partition_fsuse_percent")
+                echo "<item label=\"Taille : $partition_fsused_value $partition_fsused_unit utilisés sur $partition_fssize_value $partition_fssize_unit (${partition_fsuse_percent})\" />"
+            else
+                partition_size=$(${default_path}lsblk -npo SIZE "$partition")
+                partition_size_value=$(echo "$partition_size" | grep -Eo '[0-9,.]+')
+                partition_size_unit=$(echo "$partition_size" | grep -Eo '[A-Z]')
+                partition_size_unit=$(change_unit "$partition_size_unit")
+                echo "<item label=\"Taille : $partition_size_value $partition_size_unit\" />"
+            fi
+        fi
+    done < <(${default_path}lsblk -npo KNAME "$partition_disk_path")
+    unset partition_disk_fullsize partition partition_size partition_disk_used partition_unallocated_space
+    partition_disk_fullsize=$(${default_path}lsblk -bdno SIZE "$line")
+    while IFS= read -r partition; do
+        partition_size=$(echo "$partition" | awk '{print $1}' | grep -Eo '[0-9]+')
+        partition_disk_used=$(( partition_disk_used + partition_size ))
+    done < <(${default_path}lsblk -bnpo SIZE,TYPE "$partition_disk_path" | grep ' part')
+    partition_unallocated_space=$(( partition_disk_fullsize - partition_disk_used ))
+    partition_unallocated_percent=$(echo "scale=2; $partition_unallocated_space / $partition_disk_fullsize * 100" | bc)
+    if [ "$partition_unallocated_space" -gt 0 ] && (( $(echo "$partition_unallocated_percent 0.01" | awk '{print ($1 > $2)}') )); then
+        divide_by_tib=$(( 1024 * 1024 * 1024 * 1024 ))
+        divide_by_gib=$(( 1024 * 1024 * 1024 ))
+        divide_by_mib=$(( 1024 * 1024 ))
+        divide_by_kib=$(( 1024 ))
+        if [ "$partition_unallocated_space" -gt "$divide_by_tib" ]; then
+            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_tib" | bc)
+            partition_unallocated_space="${partition_unallocated_space/./,} TiB"
+        elif [ "$partition_unallocated_space" -gt "$divide_by_gib" ]; then
+            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_gib" | bc)
+            partition_unallocated_space="${partition_unallocated_space/./,} GiB"
+        elif [ "$partition_unallocated_space" -gt "$divide_by_mib" ]; then
+            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_mib" | bc)
+            partition_unallocated_space="${partition_unallocated_space/./,} MiB"
+        elif [ "$partition_unallocated_space" -gt "$divide_by_kib" ]; then
+            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_kib" | bc)
+            partition_unallocated_space="${partition_unallocated_space/./,} KiB"
+        else
+            partition_unallocated_space="$partition_unallocated_space B"
+        fi
+        echo "<separator />"
+        echo "<item label=\"Espace non alloué : $partition_unallocated_space\" />"
+    fi
+done < <(${default_path}lsblk -dno PATH)
 
 if [ -z "$is_partition" ]; then
     echo "<item label=\"Aucune partition détectée.\" />"
