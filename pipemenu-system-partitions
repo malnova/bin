@@ -23,12 +23,15 @@ while IFS= read -r line; do
     is_partition=1
     partition_disk_path=$(sanitize_output "$line")
     partition_disk_name=$(${default_path}lsblk -dno MODEL "$line" | sed 's/_/ /g')
+    partition_disk_size=$(${default_path}lsblk -dno SIZE "$line")
+    partition_disk_size_unit=$(echo "$partition_disk_size" | grep -Eo '[A-Z]')
+    partition_disk_size_unit=$(change_unit "$partition_disk_size_unit")
+    partition_disk_size_value=$(echo "$partition_disk_size" | grep -Eo '[0-9,.]+')
     if [ -z "$partition_disk_name" ]; then
-        echo "<separator label=\"$partition_disk_path\" />"
-    else
-        partition_disk_name=$(sanitize_output "$partition_disk_name")
-        echo "<separator label=\"$partition_disk_name ($partition_disk_path)\" />"
+        partition_disk_name="$partition_disk_path"
     fi
+    partition_disk_name=$(sanitize_output "$partition_disk_name")
+    echo "<separator label=\"$partition_disk_name ($partition_disk_size_value $partition_disk_size_unit)\" />"
     partition_nb=0
     unset partition partition_disk_used partition_mountpoint
     while IFS= read -r partition; do
