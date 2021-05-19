@@ -95,22 +95,28 @@ while IFS= read -r line; do
         divide_by_mib=$(( 1024 * 1024 ))
         divide_by_kib=$(( 1024 ))
         if [ "$partition_unallocated_space" -gt "$divide_by_tib" ]; then
-            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_tib" | bc)
-            partition_unallocated_space="${partition_unallocated_space/./,} TiB"
+            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_tib / 20)) / $divide_by_tib" | bc)
+            partition_unallocated_unit="TiB"
         elif [ "$partition_unallocated_space" -gt "$divide_by_gib" ]; then
-            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_gib" | bc)
-            partition_unallocated_space="${partition_unallocated_space/./,} GiB"
+            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_gib / 20)) / $divide_by_gib" | bc)
+            partition_unallocated_unit="GiB"
         elif [ "$partition_unallocated_space" -gt "$divide_by_mib" ]; then
-            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_mib" | bc)
-            partition_unallocated_space="${partition_unallocated_space/./,} MiB"
+            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_mib / 20)) / $divide_by_mib" | bc)
+            partition_unallocated_unit="MiB"
         elif [ "$partition_unallocated_space" -gt "$divide_by_kib" ]; then
-            partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_kib" | bc)
-            partition_unallocated_space="${partition_unallocated_space/./,} KiB"
+            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_kib / 20)) / $divide_by_kib" | bc)
+            partition_unallocated_unit="KiB"
         else
             partition_unallocated_space="$partition_unallocated_space B"
+            partition_unallocated_unit="B"
         fi
-        echo "<separator />"
-        echo "<item label=\"Espace non alloué : $partition_unallocated_space\" />"
+        if [[ "$partition_unallocated_space" =~ ".0" ]]; then
+            partition_unallocated_space=$(echo "$partition_unallocated_space" | cut -f1 -d".")
+        fi
+        if [ "$partition_nb" -gt 0 ]; then
+            echo "<separator />"
+        fi
+        echo "<item label=\"Espace non alloué : ${partition_unallocated_space/./,} $partition_unallocated_unit\" />"
     fi
 done < <(${default_path}lsblk -dno PATH)
 
