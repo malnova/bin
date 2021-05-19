@@ -113,7 +113,7 @@ if [ -e "${default_path}hwinfo" ]; then
                     disk_capacity=$(echo "$disk_capacity" | grep -Eo '[0-9,.]+')
                     if [ "$disk_capacity_unit" = "K" ]; then
                         disk_capacity_bytes=$(( (disk_capacity_bytes + 500) / 1000 ))
-                        disk_capacity_bytes="$disk_capacity_bytes KB"
+                        disk_capacity_bytes="$disk_capacity_bytes kB"
                         disk_capacity_unit="KiB"
                     elif [ "$disk_capacity_unit" = "M" ]; then
                         disk_capacity_bytes=$(( (disk_capacity_bytes + 500000) / 1000000 ))
