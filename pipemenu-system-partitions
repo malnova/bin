@@ -4,15 +4,15 @@
 
 change_unit() {
     if [ "$1" = "K" ]; then
-        echo "Kio"
+        echo "KiB"
     elif [ "$1" = "M" ]; then
-        echo "Mio"
+        echo "MiB"
     elif [ "$1" = "G" ]; then
-        echo "Gio"
+        echo "GiB"
     elif [ "$1" = "T" ]; then
-        echo "Tio"
+        echo "TiB"
     else
-        echo "octets"
+        echo "B"
     fi
 }
 
@@ -27,7 +27,7 @@ while IFS= read -r line; do
         partition_disk_path=$(sanitize_output "$partition_disk_path")
         partition_disk_model=$(echo "$partition_disk_model" | sed 's/_/ /g')
         partition_disk_model=$(sanitize_output "$partition_disk_model")
-        echo "<separator label=\"$partition_disk_model ($partition_disk_path)\" />"
+        echo -e "<separator label=\"$partition_disk_model\n ($partition_disk_path)\" />"
         partition_nb=0
         unset partition partition_disk_used partition_mountpoint
         while IFS= read -r partition; do
@@ -90,24 +90,24 @@ while IFS= read -r line; do
         partition_unallocated_percent=$(echo "scale=2; $partition_unallocated_space / $partition_disk_fullsize * 100" | bc)
         if (( $(echo "$partition_unallocated_percent 0.01" | awk '{print ($1 > $2)}') )); then
         if [ "$partition_unallocated_space" -gt 0 ]; then
-            divide_by_tio=$(( 1024 * 1024 * 1024 * 1024 ))
-            divide_by_gio=$(( 1024 * 1024 * 1024 ))
-            divide_by_mio=$(( 1024 * 1024 ))
-            divide_by_kio=$(( 1024 ))
-            if [ "$partition_unallocated_space" -gt "$divide_by_tio" ]; then
-                partition_unallocated_space=$(( partition_unallocated_space / divide_by_tio ))
-                partition_unallocated_space="$partition_unallocated_space Tio"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_gio" ]; then
-                partition_unallocated_space=$(( partition_unallocated_space / divide_by_gio ))
-                partition_unallocated_space="$partition_unallocated_space Gio"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_mio" ]; then
-                partition_unallocated_space=$(( partition_unallocated_space / divide_by_mio ))
-                partition_unallocated_space="$partition_unallocated_space Mio"
-            elif [ "$partition_unallocated_space" -gt "$divide_by_kio" ]; then
-                partition_unallocated_space=$(( partition_unallocated_space / divide_by_kio ))
-                partition_unallocated_space="$partition_unallocated_space Kio"
+            divide_by_tib=$(( 1024 * 1024 * 1024 * 1024 ))
+            divide_by_gib=$(( 1024 * 1024 * 1024 ))
+            divide_by_mib=$(( 1024 * 1024 ))
+            divide_by_kib=$(( 1024 ))
+            if [ "$partition_unallocated_space" -gt "$divide_by_tib" ]; then
+                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_tib" | bc)
+                partition_unallocated_space="${partition_unallocated_space/./,} TiB"
+            elif [ "$partition_unallocated_space" -gt "$divide_by_gib" ]; then
+                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_gib" | bc)
+                partition_unallocated_space="${partition_unallocated_space/./,} GiB"
+            elif [ "$partition_unallocated_space" -gt "$divide_by_mib" ]; then
+                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_mib" | bc)
+                partition_unallocated_space="${partition_unallocated_space/./,} MiB"
+            elif [ "$partition_unallocated_space" -gt "$divide_by_kib" ]; then
+                partition_unallocated_space=$(echo "scale=1; $partition_unallocated_space / $divide_by_kib" | bc)
+                partition_unallocated_space="${partition_unallocated_space/./,} KiB"
             else
-                partition_unallocated_space="$partition_unallocated_space octets"
+                partition_unallocated_space="$partition_unallocated_space B"
             fi
             echo "<separator />"
             echo "<item label=\"Espace non alloué : $partition_unallocated_space\" />"
