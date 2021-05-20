@@ -2,38 +2,50 @@
 . pipemenu-default-commands
 . pipemenu-system-functions
 
-change_unit() {
-    if [ "$1" = "K" ]; then
-        echo "KiB"
-    elif [ "$1" = "M" ]; then
-        echo "MiB"
-    elif [ "$1" = "G" ]; then
-        echo "GiB"
-    elif [ "$1" = "T" ]; then
-        echo "TiB"
-    else
-        echo "B"
-    fi
+# Fonction pour convertir des octets en kibioctets, mébioctets, gibioctets et tébioctets
+convert_binary() {
+    local str="$@"
+    divide_by_T=$(( 1024 ** 4 ))
+    divide_by_G=$(( 1024 ** 3 ))
+    divide_by_M=$(( 1024 ** 2 ))
+    divide_by_k=$(( 1024 ))
+        if [ "$str" -gt "$divide_by_T" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_T / 20)) / $divide_by_T" | bc)
+            unit="Tio"
+        elif [ "$str" -gt "$divide_by_G" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_G / 20)) / $divide_by_G" | bc)
+            unit="Gio"
+        elif [ "$str" -gt "$divide_by_M" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_M / 20)) / $divide_by_M" | bc)
+            unit="Mio"
+        elif [ "$str" -gt "$divide_by_k" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_k / 20)) / $divide_by_k" | bc)
+            unit="Kio"
+        else
+            value="$str"
+            unit="o"
+        fi
+        if [[ "$value" =~ ".0" ]]; then
+            value=$(echo "$value" | cut -f1 -d".")
+        fi
+        echo "${value/./,} $unit"
 }
 
 echo "<openbox_pipe_menu>"
 
-unset is_partition partition_disk_path partition_disk_model
+unset is_partition partition_disk_name partition_disk_fullsize partition_disk_size
 while IFS= read -r line; do
     is_partition=1
-    partition_disk_path=$(sanitize_output "$line")
     partition_disk_name=$(${default_path}lsblk -dno MODEL "$line" | sed 's/_/ /g')
-    partition_disk_size=$(${default_path}lsblk -dno SIZE "$line")
-    partition_disk_size_unit=$(echo "$partition_disk_size" | grep -Eo '[A-Z]')
-    partition_disk_size_unit=$(change_unit "$partition_disk_size_unit")
-    partition_disk_size_value=$(echo "$partition_disk_size" | grep -Eo '[0-9,.]+')
     if [ -z "$partition_disk_name" ]; then
-        partition_disk_name="$partition_disk_path"
+        partition_disk_name="$line"
     fi
     partition_disk_name=$(sanitize_output "$partition_disk_name")
-    echo "<separator label=\"$partition_disk_name ($partition_disk_size_value $partition_disk_size_unit)\" />"
+    partition_disk_fullsize=$(${default_path}lsblk -bdno SIZE "$line")
+    partition_disk_size=$(convert_binary "$partition_disk_fullsize")
+    echo "<separator label=\"$partition_disk_name ($partition_disk_size)\" />"
     partition_nb=0
-    unset partition partition_disk_used partition_mountpoint
+    unset partition partition_mountpoint partition_name
     while IFS= read -r partition; do
         partition_mountpoint=$(${default_path}lsblk -npo MOUNTPOINT "$partition" | head -n1)
         if [ ! -z "$partition_mountpoint" ]; then
@@ -63,63 +75,34 @@ while IFS= read -r line; do
                 echo "<item label=\"Étiquette : $partition_label\" />"
             fi
             unset partition_fsused partition_fssize partition_fsuse_percent partition_size
-            partition_fsused=$(${default_path}lsblk -npo FSUSED "$partition")
-            partition_fssize=$(${default_path}lsblk -npo FSSIZE "$partition")
-            partition_fsuse_percent=$(${default_path}lsblk -npo FSUSE% "$partition")
+            partition_fsused=$(${default_path}lsblk -bnpo FSUSED "$partition")
+            partition_fssize=$(${default_path}lsblk -bnpo FSSIZE "$partition")
+            partition_fsuse_percent=$(${default_path}lsblk -bnpo FSUSE% "$partition")
             if [ ! -z "$partition_fsused" ] && [ ! -z "$partition_fssize" ] && [ ! -z "$partition_fsuse_percent" ]; then
-                partition_fsused_unit=$(echo "$partition_fsused" | grep -Eo '[A-Z]')
-                partition_fsused_unit=$(change_unit "$partition_fsused_unit")
-                partition_fsused_value=$(echo "$partition_fsused" | grep -Eo '[0-9,.]+')
-                partition_fssize_unit=$(echo "$partition_fssize" | grep -Eo '[A-Z]')
-                partition_fssize_unit=$(change_unit "$partition_fssize_unit")
-                partition_fssize_value=$(echo "$partition_fssize" | grep -Eo '[0-9,.]+')
+                partition_fsused=$(convert_binary "$partition_fsused")
+                partition_fssize=$(convert_binary "$partition_fssize")
                 partition_fsuse_percent=$(sanitize_output "$partition_fsuse_percent")
-                echo "<item label=\"Taille : $partition_fsused_value $partition_fsused_unit utilisés sur $partition_fssize_value $partition_fssize_unit (${partition_fsuse_percent})\" />"
+                echo "<item label=\"Taille : $partition_fsused utilisés sur $partition_fssize (${partition_fsuse_percent})\" />"
             else
-                partition_size=$(${default_path}lsblk -npo SIZE "$partition")
-                partition_size_value=$(echo "$partition_size" | grep -Eo '[0-9,.]+')
-                partition_size_unit=$(echo "$partition_size" | grep -Eo '[A-Z]')
-                partition_size_unit=$(change_unit "$partition_size_unit")
-                echo "<item label=\"Taille : $partition_size_value $partition_size_unit\" />"
+                partition_size=$(${default_path}lsblk -bnpo SIZE "$partition")
+                partition_size=$(convert_binary "$partition_size")
+                echo "<item label=\"Taille : $partition_size\" />"
             fi
         fi
-    done < <(${default_path}lsblk -npo KNAME "$partition_disk_path")
-    unset partition_disk_fullsize partition partition_size partition_disk_used partition_unallocated_space
-    partition_disk_fullsize=$(${default_path}lsblk -bdno SIZE "$line")
+    done < <(${default_path}lsblk -npo KNAME "$line")
+    unset partition partition_size partition_disk_used partition_unallocated_space partition_unallocated_percent
     while IFS= read -r partition; do
         partition_size=$(echo "$partition" | awk '{print $1}' | grep -Eo '[0-9]+')
         partition_disk_used=$(( partition_disk_used + partition_size ))
-    done < <(${default_path}lsblk -bnpo SIZE,TYPE "$partition_disk_path" | grep ' part')
+    done < <(${default_path}lsblk -bnpo SIZE,TYPE "$line" | grep ' part')
     partition_unallocated_space=$(( partition_disk_fullsize - partition_disk_used ))
     partition_unallocated_percent=$(echo "scale=2; $partition_unallocated_space / $partition_disk_fullsize * 100" | bc)
     if [ "$partition_unallocated_space" -gt 0 ] && (( $(echo "$partition_unallocated_percent 0.01" | awk '{print ($1 > $2)}') )); then
-        divide_by_tib=$(( 1024 * 1024 * 1024 * 1024 ))
-        divide_by_gib=$(( 1024 * 1024 * 1024 ))
-        divide_by_mib=$(( 1024 * 1024 ))
-        divide_by_kib=$(( 1024 ))
-        if [ "$partition_unallocated_space" -gt "$divide_by_tib" ]; then
-            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_tib / 20)) / $divide_by_tib" | bc)
-            partition_unallocated_unit="TiB"
-        elif [ "$partition_unallocated_space" -gt "$divide_by_gib" ]; then
-            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_gib / 20)) / $divide_by_gib" | bc)
-            partition_unallocated_unit="GiB"
-        elif [ "$partition_unallocated_space" -gt "$divide_by_mib" ]; then
-            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_mib / 20)) / $divide_by_mib" | bc)
-            partition_unallocated_unit="MiB"
-        elif [ "$partition_unallocated_space" -gt "$divide_by_kib" ]; then
-            partition_unallocated_space=$(echo "scale=1; ($partition_unallocated_space + ($divide_by_kib / 20)) / $divide_by_kib" | bc)
-            partition_unallocated_unit="KiB"
-        else
-            partition_unallocated_space="$partition_unallocated_space B"
-            partition_unallocated_unit="B"
-        fi
-        if [[ "$partition_unallocated_space" =~ ".0" ]]; then
-            partition_unallocated_space=$(echo "$partition_unallocated_space" | cut -f1 -d".")
-        fi
+        partition_unallocated_space=$(convert_binary "$partition_unallocated_space")
         if [ "$partition_nb" -gt 0 ]; then
             echo "<separator />"
         fi
-        echo "<item label=\"Espace non alloué : ${partition_unallocated_space/./,} $partition_unallocated_unit\" />"
+        echo "<item label=\"Espace non alloué : $partition_unallocated_space\" />"
     fi
 done < <(${default_path}lsblk -dno PATH)
 

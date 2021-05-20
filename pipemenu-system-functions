@@ -1,7 +1,7 @@
 #!/bin/dash
 end_delimiter=" |@| "
 
-# Fonction pour un affichage correct dans le menu d'Openbox (pipemenus)
+# Fonctions pour un affichage correct dans le menu d'Openbox (pipemenus)
 sanitize_output() {
     local str="$@"
     local output

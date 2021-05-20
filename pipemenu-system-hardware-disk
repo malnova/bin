@@ -2,6 +2,35 @@
 . pipemenu-default-commands
 . pipemenu-system-functions
 
+# Fonction pour convertir des octets en kilooctets, mégaoctets, gigaoctets et téraoctets
+convert_decimal() {
+    local str="$@"
+    divide_by_T=$(( 1000 ** 4 ))
+    divide_by_G=$(( 1000 ** 3 ))
+    divide_by_M=$(( 1000 ** 2 ))
+    divide_by_k=$(( 1000 ))
+        if [ "$str" -gt "$divide_by_T" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_T / 20)) / $divide_by_T" | bc)
+            unit="To"
+        elif [ "$str" -gt "$divide_by_G" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_G / 20)) / $divide_by_G" | bc)
+            unit="Go"
+        elif [ "$str" -gt "$divide_by_M" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_M / 20)) / $divide_by_M" | bc)
+            unit="Mo"
+        elif [ "$str" -gt "$divide_by_k" ]; then
+            value=$(echo "scale=1; ($str + ($divide_by_k / 20)) / $divide_by_k" | bc)
+            unit="ko"
+        else
+            value="$str"
+            unit="o"
+        fi
+        if [[ "$value" =~ ".0" ]]; then
+            value=$(echo "$value" | cut -f1 -d".")
+        fi
+        echo "${value/./,} $unit"
+}
+
 echo "<openbox_pipe_menu>"
 
 unset is_disk
@@ -107,27 +136,11 @@ if [ -e "${default_path}hwinfo" ]; then
                 fi
                 unset disk_capacity
                 disk_capacity=$(lsblk -dno SIZE $disk_device_file 2>/dev/null)
-                disk_capacity_bytes=$(lsblk -dnbo SIZE $disk_device_file 2>/dev/null)
+                disk_capacity_bytes=$(lsblk -bdno SIZE $disk_device_file 2>/dev/null)
                 if [ ! -z "$disk_capacity" ] && [ ! -z "$disk_capacity_bytes" ]; then
-                    disk_capacity_unit=$(echo "$disk_capacity" | grep -Eo '[A-Z]')
+                    disk_capacity_unit=$(echo "$disk_capacity" | grep -Eo '[A-Z]' | sed 's/T/Tio/;s/G/Gio/;s/M/Mio/;s/K/Kio/;s/B/o/')
                     disk_capacity=$(echo "$disk_capacity" | grep -Eo '[0-9,.]+')
-                    if [ "$disk_capacity_unit" = "K" ]; then
-                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500) / 1000 ))
-                        disk_capacity_bytes="$disk_capacity_bytes kB"
-                        disk_capacity_unit="KiB"
-                    elif [ "$disk_capacity_unit" = "M" ]; then
-                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000) / 1000000 ))
-                        disk_capacity_bytes="$disk_capacity_bytes MB"
-                        disk_capacity_unit="MiB"
-                    elif [ "$disk_capacity_unit" = "G" ]; then
-                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000000) / 1000000000 ))
-                        disk_capacity_bytes="$disk_capacity_bytes GB"
-                        disk_capacity_unit="GiB"
-                    elif [ "$disk_capacity_unit" = "T" ]; then
-                        disk_capacity_bytes=$(( (disk_capacity_bytes + 500000000000) / 1000000000000 ))
-                        disk_capacity_bytes="$disk_capacity_bytes TB"
-                        disk_capacity_unit="TiB"
-                    fi
+                    disk_capacity_bytes=$(convert_decimal "$disk_capacity_bytes")
                     echo "<item label=\"Capacité : $disk_capacity $disk_capacity_unit ($disk_capacity_bytes)\" />"
                 fi
                 unset disk_driver
