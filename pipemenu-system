@@ -19,9 +19,9 @@ echo "<menu execute=\"${scripts_path}pipemenu-system-network\" id=\"system-netwo
 echo "<menu execute=\"${scripts_path}pipemenu-system-system\" id=\"system-system\" label=\"Système\" />"
 
 if [ -e "${default_path}sensors" ]; then
-    # Requiert l'installation du paquet lm-sensors
-    echo "<separator label=\"lm-sensors\" />"
-    
+    # Requiert l'installation du paquet lm_sensors
+    echo "<separator label=\"lm_sensors\" />"
+
     # Températures
     echo "<menu execute=\"${scripts_path}pipemenu-system-temperature\" id=\"system-temperature\" label=\"Températures\" />"
     # Ventilateurs

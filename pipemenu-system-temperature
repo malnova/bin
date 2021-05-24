@@ -6,7 +6,7 @@ echo "<openbox_pipe_menu>"
 
 unset is_temp
 if [ -e "${default_path}sensors" ]; then
-    # Requiert l'installation du paquet lm-sensors
+    # Requiert l'installation du paquet lm_sensors
     IFS=$' '
     while read -d $'\xBF' line; do
         if [[ $line =~ "°" ]]; then
